@@ -9,8 +9,9 @@
         "bedrock:InvokeModelWithResponseStream"
       ],
       "Resource": [
-        "arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-haiku-*",
-        "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-3-5-haiku-*"
+        "arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
+        "arn:aws:bedrock:*:*:inference-profile/*anthropic.claude-*",
+        "arn:aws:bedrock:*:*:inference-profile/us.anthropic.claude-*"
       ]
     }
   ]

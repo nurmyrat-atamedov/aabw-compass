@@ -125,7 +125,7 @@ def _bedrock_loop(seed_text: str, system: str, profile: dict, ctx: dict, max_tur
     except Exception:
         return None
     tools = tools or TOOLSPEC
-    model_id = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-haiku-20241022-v1:0")
+    model_id = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0")
     region = os.environ.get("AWS_REGION", "us-east-1")
     try:
         client = boto3.client("bedrock-runtime", region_name=region)
@@ -259,7 +259,7 @@ def _bedrock_text(system: str, prompt: str) -> str | None:
         import boto3
     except Exception:
         return None
-    model_id = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-haiku-20241022-v1:0")
+    model_id = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0")
     region = os.environ.get("AWS_REGION", "us-east-1")
     try:
         client = boto3.client("bedrock-runtime", region_name=region)
