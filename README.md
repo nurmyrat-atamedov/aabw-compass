@@ -2,9 +2,9 @@
 
 **Never miss the thing you came for.**
 
-**🔴 Live demo: https://54-81-185-226.sslip.io**  ·  Built for the Builder Experience Track.
+**🔴 Live demo: https://54-81-185-226.sslip.io** · **🎬 [Demo video](https://youtu.be/AwowFSkIKlc)** · Built for the Builder Experience Track.
 
-Agentic AI Build Week is 5 days, 2,000 builders, 3+ venues, 30+ workshops,
+Agentic AI Build Week is 5 days, 2,000 builders, 4 venues, 30+ workshops,
 limited seats, and a flood of perks and deadlines. Every builder asks the same
 question dozens of times a day: *"where am I supposed to be right now, and am I
 missing something better?"*
@@ -33,15 +33,26 @@ find a team, learn the stack, meet investors, win a track). Then:
   extracts your skills, interests, and seniority, auto-selects your goals and a
   suggested track, and biases the whole plan toward sessions, mentors, and perks
   that fit your background.
+- **Negotiate with the agent** — every session has a *Discuss* button. Tell the
+  agent *"swap this for something hands-on"* or *"remove it"* and it edits **only
+  that slot**, pinning the rest. Replace appears only when a real parallel
+  session exists; otherwise it honestly frees the slot, which you can refill.
+- **Sponsors & judges directory** — ask *"tell me about Guardian"* or *"who
+  judges the AWS track"* and the agent answers from a real directory (company
+  briefs, tracks, LinkedIn lookups).
+- **Plan tabs + day filters, "fills fast" seat badges, real RSVP links, key
+  dates, perks to claim, calendar export, and a shareable plan link.**
 
 ## Why it's an agent, not a chatbot
 
-The "Ask" feature runs an **Amazon Bedrock** (Converse API + tool use) loop.
-The model plans over five tools — `build_plan`, `now_next`, `search_sessions`,
-`find_mentors`, `find_perks` — and grounds every answer in the event data. It
-never free-associates. If no AWS credentials are present, it falls back to a
-deterministic intent router that calls the **same tools**, so the product is
-fully usable with zero keys.
+The agent runs an **Amazon Bedrock** (Claude Sonnet 4.5, Converse API + tool
+use) loop. It plans over real tools — `build_plan`, `now_next`,
+`search_sessions`, `find_mentors`, `find_perks`, `lookup_directory`,
+`replace_session`, `remove_session`, `add_session` — and grounds every answer in
+the event data. It does not just *answer*; it **acts** on your plan. If no AWS
+credentials are present, it falls back to a deterministic pipeline that calls the
+**same tools**, so the product is fully usable with zero keys (every response is
+labelled `bedrock` or `local`).
 
 The planner itself is deterministic constraint-solving (weighted interval
 scheduling with a venue-travel feasibility constraint) — so your plan is
@@ -67,7 +78,7 @@ Optional — turn on the Bedrock brain (otherwise the local fallback is used):
 
 ```bash
 export AWS_REGION=us-east-1
-export BEDROCK_MODEL_ID=us.anthropic.claude-3-5-haiku-20241022-v1:0
+export BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-5-20250929-v1:0
 # plus standard AWS credentials in your environment
 ```
 
@@ -81,7 +92,7 @@ NOW / NEXT / DON'T MISS update live.
    **8000** (or 80 if you front it with nginx) and 22.
 2. **Give it Bedrock access.** Create an IAM role with the policy in
    `deploy/bedrock-policy.json`, attach it to the instance. Make sure Claude
-   3.5 Haiku model access is enabled in your region (Bedrock console → Model
+   Sonnet 4.5 model access is enabled in your region (Bedrock console → Model
    access). boto3 picks up the instance role automatically, no keys on disk.
 3. **Ship the code** and run setup:
    ```bash
@@ -100,5 +111,6 @@ Logs: `journalctl -u compass -f`.
 
 ## Stack
 
-FastAPI · Amazon Bedrock (Converse + tool use) · vanilla JS + Tailwind ·
-deterministic scheduler in pure Python. Self-contained, public data, MIT.
+FastAPI · Amazon Bedrock (Claude Sonnet 4.5, Converse + tool use) · vanilla JS +
+Tailwind · deterministic scheduler in pure Python · nginx + Let's Encrypt on EC2.
+Self-contained, public data, MIT.
