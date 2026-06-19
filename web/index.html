@@ -104,11 +104,14 @@
 
     <!-- AGENT -->
     <div class="glass rounded-2xl p-4">
-      <div class="flex items-center justify-between mb-2">
+      <button id="agentToggle" class="w-full flex items-center justify-between gap-2">
         <div class="text-[11px] font-semibold uppercase tracking-widest text-emerald-400">⚡ How the agent planned this</div>
-        <span id="brain" class="text-[10px] mono px-2 py-0.5 rounded-full"></span>
-      </div>
-      <div id="trace" class="space-y-1.5 text-[12px] mono text-slate-400"></div>
+        <div class="flex items-center gap-2">
+          <span id="brain" class="text-[10px] mono px-2 py-0.5 rounded-full"></span>
+          <span id="agentCaret" class="text-slate-500 text-[11px] btn">▾</span>
+        </div>
+      </button>
+      <div id="trace" class="space-y-1.5 text-[12px] mono text-slate-400 mt-2"></div>
       <div id="summary" class="mt-3 text-[13px] leading-relaxed text-slate-200 border-t border-white/5 pt-3 hidden"></div>
     </div>
 
@@ -464,7 +467,7 @@ async function ask(text){
       body:JSON.stringify({profile, question:text, date:$("#simDate").value, time:$("#simTime").value})})).json();
   } finally { clearInterval(tid); }
   t.remove();
-  const tr = r.trace ? `<div class="mt-1.5 text-[10px] mono text-slate-600 border-l border-white/10 pl-2 space-y-0.5">${traceHTML(r.trace.filter(s=>s.type!=="answer"))}</div>` : "";
+  const tr = traceDetails(r.trace);
   chat.insertAdjacentHTML("beforeend",`<div class="fade"><div class="glass-2 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-[13px] leading-relaxed">${mdLite(r.answer)}</div><div class="text-[9px] mono mt-1 ${r.brain==="bedrock"?"text-emerald-500":"text-slate-600"}">${r.brain==="bedrock"?"● answered by Bedrock agent":"○ local"}</div>${tr}</div>`);
   chat.scrollTop = chat.scrollHeight;
 }
@@ -503,7 +506,7 @@ async function discussSend(text){
       body: JSON.stringify({profile, instruction:text, focus:discussFocus, date:$("#simDate").value, time:$("#simTime").value})})).json();
   } finally { clearInterval(tid); }
   t.remove();
-  const tr = r.trace ? `<div class="mt-1.5 text-[10px] mono text-slate-600 border-l border-white/10 pl-2 space-y-0.5">${traceHTML(r.trace.filter(s=>s.type!=="answer"))}</div>` : "";
+  const tr = traceDetails(r.trace);
   chat.insertAdjacentHTML("beforeend", `<div class="fade"><div class="glass-2 rounded-2xl rounded-bl-sm px-3 py-2">${mdLite(r.answer)}</div>${tr}</div>`);
   chat.scrollTop = chat.scrollHeight;
   if(r.state){ profile = {...profile, pinned:r.state.pinned||[], excluded:r.state.excluded||[]}; localStorage.setItem("compass", JSON.stringify(profile)); }
@@ -523,6 +526,19 @@ function setView(name){
   });
 }
 document.querySelectorAll(".nav").forEach(n => n.onclick = () => setView(n.dataset.view));
+
+let traceOpen = true;
+$("#agentToggle").onclick = () => {
+  traceOpen = !traceOpen;
+  $("#trace").classList.toggle("hidden", !traceOpen);
+  $("#agentCaret").textContent = traceOpen ? "▾" : "▸";
+};
+function traceDetails(trace){
+  if(!trace) return "";
+  const steps = trace.filter(s=>s.type!=="answer");
+  if(!steps.length) return "";
+  return `<details class="mt-1.5"><summary class="text-[10px] text-slate-600 cursor-pointer select-none">▸ ${steps.length} agent step${steps.length>1?'s':''}</summary><div class="text-[10px] mono text-slate-600 border-l border-white/10 pl-2 space-y-0.5 mt-1">${traceHTML(steps)}</div></details>`;
+}
 
 let selectedDay = null;
 const DAY_LABELS = {0:"Networking",1:"Day 1",2:"Day 2",3:"Day 3",4:"Day 4",5:"Day 5"};
