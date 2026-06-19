@@ -267,8 +267,16 @@ EDIT_SYSTEM = (
     "IMPORTANT: report exactly what the edit tool returned. If slot_filled is true, name the "
     "session in now_filled_by that now occupies that time. If slot_filled is false, tell the user "
     "there was no other session in that time slot, so it is now free. Never claim a replacement "
-    "that did not happen, and never invent a session."
+    "that did not happen, and never invent a session. "
+    "You MUST call replace_session, remove_session, or add_session to make any change. NEVER say "
+    "you removed, replaced, or added a session unless you actually called that tool in this turn."
 )
+
+
+def _looks_like_edit(instruction: str) -> bool:
+    q = (instruction or "").lower()
+    return any(w in q for w in ["replace", "swap", "change", "different", "instead", "another",
+                                "remove", "delete", "drop", "add", "re-add", "readd", "back"])
 
 
 def run_edit(profile: dict, instruction: str, focus: dict, ctx: dict) -> dict:
@@ -284,6 +292,10 @@ def run_edit(profile: dict, instruction: str, focus: dict, ctx: dict) -> dict:
     res = _bedrock_loop(seed, EDIT_SYSTEM, profile, ctx, max_turns=6, tools=EDIT_TOOLSPEC)
     if res and not res.get("_error") and res.get("final"):
         plan = ctx.get("plan")
+        # Safety net: the agent replied as if it edited but never called the tool.
+        # Do the edit for real so "I removed it" is actually true.
+        if plan is None and focus and focus.get("id") and _looks_like_edit(instruction):
+            return _fallback_edit(profile, instruction, focus, ctx)
         out = {"answer": res["final"], "trace": res["trace"], "brain": "bedrock",
                "state": ctx["state"]}
         if plan is not None:

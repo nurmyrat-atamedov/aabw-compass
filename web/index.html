@@ -129,6 +129,7 @@
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <div id="dayFilter" class="flex gap-1.5 flex-wrap text-[11px]"></div>
         <div class="flex gap-1.5">
+          <button id="replan" class="btn glass-2 rounded-lg px-2.5 py-1.5 text-[11px] text-cyan-300 font-medium">↻ Re-plan</button>
           <button id="ics" class="btn glass-2 rounded-lg px-2.5 py-1.5 text-[11px] text-emerald-300 font-medium">📅 Calendar</button>
           <button id="dl" class="btn glass-2 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-medium">⬇ Download</button>
           <button id="share" class="btn glass-2 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-medium">🔗 Share</button>
@@ -323,17 +324,34 @@ $("#go").onclick = () => {
   const goals = [...$("#goals").querySelectorAll(".chip.on")].map(c => c.dataset.g);
   profile = { name: $("#name").value || null, goals, track: $("#track").value || null,
               interests: cvInterests, skills: cvSkills, cv_summary: cvSummary, pinned: [], excluded: [] };
-  localStorage.setItem("compass", JSON.stringify(profile)); enterApp();
+  localStorage.setItem("compass", JSON.stringify(profile));
+  localStorage.removeItem("compass_plan");   // new goals -> fresh plan, not the cached one
+  enterApp();
 };
 $("#editBtn").onclick = () => { $("#app").classList.add("hidden"); $("#onboard").classList.remove("hidden"); $("#hdrCtrls").classList.add("hidden"); $("#hdrCtrls").classList.remove("flex"); };
 
+let lastSummary = "", lastBrain = "local";
+function savePlan(){ try{ localStorage.setItem("compass_plan", JSON.stringify({plan:lastPlan, summary:lastSummary, brain:lastBrain})); }catch(e){} }
+function renderCachedPlan(){
+  let c; try{ c = JSON.parse(localStorage.getItem("compass_plan")||"null"); }catch(e){ c=null; }
+  if(!c || !c.plan) return false;
+  lastBrain=c.brain||"local"; lastSummary=c.summary||""; lastPlan=c.plan;
+  brainBadge(lastBrain);
+  $("#trace").innerHTML = `<div class="text-slate-500">Showing your saved plan. Tap ↻ Re-plan to regenerate with the agent.</div>`;
+  if(lastSummary){ $("#summary").innerHTML = mdLite(lastSummary); $("#summary").classList.remove("hidden"); }
+  renderPlan(c.plan);
+  return true;
+}
 function enterApp(){
   $("#onboard").classList.add("hidden"); $("#app").classList.remove("hidden"); $("#app").classList.add("fade");
   $("#hdrCtrls").classList.remove("hidden"); $("#hdrCtrls").classList.add("flex");
   const tr = META.tracks.find(t=>t.id===profile.track);
   $("#hello").textContent = (profile.name ? `Hi ${profile.name} 👋  ` : "") + (tr?`Goal: ${tr.name} track`:"");
-  setView("plan"); runAgentPlan(); refresh();
+  setView("plan");
+  if(!renderCachedPlan()) runAgentPlan();   // don't re-run the agent on every refresh
+  refresh();
 }
+$("#replan").onclick = () => runAgentPlan();
 $("#simDate").onchange = refresh; $("#simTime").onchange = refresh;
 
 async function runAgentPlan(){
@@ -348,11 +366,11 @@ async function runAgentPlan(){
     r = await (await fetch("/api/agent/plan",{method:"POST",headers:{"Content-Type":"application/json"},
       body: JSON.stringify({profile, date:$("#simDate").value, time:$("#simTime").value})})).json();
   } finally { clearInterval(tid); }
-  brainBadge(r.brain);
+  brainBadge(r.brain); lastBrain = r.brain; lastSummary = r.summary||"";
   $("#trace").innerHTML=""; let i=0;
   (function step(){ if(i>=r.trace.length){ if(r.summary){$("#summary").innerHTML=mdLite(r.summary);$("#summary").classList.remove("hidden");} return; }
     $("#trace").insertAdjacentHTML("beforeend", traceHTML([r.trace[i]])); i++; setTimeout(step,240); })();
-  lastPlan = r.plan; renderPlan(r.plan);
+  lastPlan = r.plan; renderPlan(r.plan); savePlan();
 }
 
 function renderPlan(p){
@@ -411,7 +429,7 @@ async function readd(id){
   profile.pinned = Array.from(new Set([...(profile.pinned||[]), id]));
   localStorage.setItem("compass", JSON.stringify(profile));
   const p = await (await fetch("/api/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(profile)})).json();
-  lastPlan = p; renderPlan(p); refresh(); flash("↩ Added back to your plan");
+  lastPlan = p; renderPlan(p); refresh(); savePlan(); flash("↩ Added back to your plan");
 }
 
 async function refresh(){
@@ -511,7 +529,7 @@ async function discussSend(text){
   chat.insertAdjacentHTML("beforeend", `<div class="fade"><div class="glass-2 rounded-2xl rounded-bl-sm px-3 py-2">${mdLite(r.answer)}</div>${tr}</div>`);
   chat.scrollTop = chat.scrollHeight;
   if(r.state){ profile = {...profile, pinned:r.state.pinned||[], excluded:r.state.excluded||[]}; localStorage.setItem("compass", JSON.stringify(profile)); }
-  if(r.plan){ lastPlan = r.plan; renderPlan(r.plan); refresh(); flash("✅ Plan updated"); }
+  if(r.plan){ lastPlan = r.plan; renderPlan(r.plan); refresh(); savePlan(); flash("✅ Plan updated"); }
 }
 $("#dSend").onclick = () => { if($("#dInput").value.trim()){ discussSend($("#dInput").value.trim()); $("#dInput").value=""; } };
 $("#dInput").addEventListener("keydown", e => { if(e.key==="Enter") $("#dSend").click(); });
