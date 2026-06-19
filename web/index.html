@@ -187,7 +187,7 @@
     <div id="dChat" class="flex-1 overflow-y-auto p-4 space-y-2.5 min-h-[120px] text-[13px]"></div>
     <div class="p-3 border-t border-white/10">
       <div class="flex flex-wrap gap-1.5 mb-2 text-[11px]">
-        <button class="dq btn px-2 py-1 rounded-lg glass-2 text-slate-300" data-i="Replace it with a better fit for my goals">🔄 Replace it</button>
+        <button id="dqReplace" class="dq btn px-2 py-1 rounded-lg glass-2 text-slate-300" data-i="Replace it with the other session at this time">🔄 Replace it</button>
         <button class="dq btn px-2 py-1 rounded-lg glass-2 text-slate-300" data-i="Why is this session in my plan?">❓ Why this</button>
         <button class="dq btn px-2 py-1 rounded-lg glass-2 text-slate-300" data-i="Remove it from my plan">🗑 Remove</button>
       </div>
@@ -501,12 +501,16 @@ function openDiscuss(id){
   const s = all.find(x=>x.id===id);
   if(!s) return;
   const isFreed = (lastPlan.removed||[]).some(r=>r.id===id);
+  const hasAlt = !!s.has_alt;
   discussFocus = {id:s.id, title:s.title, start:s.start, venue:s.venue};
   $("#dTitle").textContent = s.title;
   $("#dMeta").textContent = `${s.start}–${s.end} · ${s.venue}${s.partner?" · "+s.partner:""}`;
+  const repl = $("#dqReplace"); if(repl) repl.style.display = (!isFreed && hasAlt) ? "" : "none";
   $("#dChat").innerHTML = isFreed
-    ? `<div class="text-[12px] text-slate-500">This time slot is free. Ask me to add this session back, or what else could go here. I'll only touch this slot.</div>`
-    : `<div class="text-[12px] text-slate-500">Ask me to replace or remove this, or why it's here. I'll change only this slot and leave the rest of your plan untouched.</div>`;
+    ? `<div class="text-[12px] text-slate-500">This time slot is free. Ask me to add this session back. I'll only touch this slot.</div>`
+    : (hasAlt
+      ? `<div class="text-[12px] text-slate-500">There's another session at this time. Ask me to swap to it, remove this, or why it's here. I'll only touch this slot.</div>`
+      : `<div class="text-[12px] text-slate-500">This is the only session in this time slot, so there's nothing to swap it for. I can remove it to free the time, or tell you why it's here.</div>`);
   const m=$("#discuss"); m.classList.remove("hidden"); m.classList.add("flex"); setTimeout(()=>$("#dInput").focus(),50);
 }
 function closeDiscuss(){ const m=$("#discuss"); m.classList.add("hidden"); m.classList.remove("flex"); }

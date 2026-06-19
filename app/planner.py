@@ -155,13 +155,19 @@ def build_plan(profile: dict) -> dict:
         item["why"] = reasons
         scored.setdefault(s["day"], []).append(item)
 
+    def _overlaps(a, b):
+        return hhmm_to_min(a["start"]) < hhmm_to_min(b["end"]) and hhmm_to_min(a["end"]) > hhmm_to_min(b["start"])
+
     venues = data.venues_by_id()
     by_day = []
     for day in sorted(scored.keys()):
-        chosen = _solve_day(scored[day])
-        # Skip pure logistics/deadline noise unless it's meaningful.
-        clean = [
-            {
+        pool = scored[day]  # all non-excluded candidates for this day
+        chosen = _solve_day(pool)
+        clean = []
+        for c in chosen:
+            # has_alt = another candidate overlaps this slot, so a real swap is possible
+            has_alt = any(o["id"] != c["id"] and _overlaps(o, c) for o in pool)
+            clean.append({
                 "id": c["id"],
                 "title": c["title"],
                 "date": c["date"],
@@ -176,10 +182,9 @@ def build_plan(profile: dict) -> dict:
                 "capacity": c.get("capacity"),
                 "tags": c.get("tags", []),
                 "why": c["why"],
+                "has_alt": has_alt,
                 "score": round(c["_score"], 2),
-            }
-            for c in chosen
-        ]
+            })
         if clean:
             by_day.append({"day": day, "date": clean[0]["date"], "sessions": clean})
 
