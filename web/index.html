@@ -112,53 +112,57 @@
       <div id="summary" class="mt-3 text-[13px] leading-relaxed text-slate-200 border-t border-white/5 pt-3 hidden"></div>
     </div>
 
-    <!-- DASHBOARD GRID -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <!-- PLAN -->
-      <div class="lg:col-span-2 space-y-4">
-        <div class="flex items-center justify-between gap-2 flex-wrap">
-          <h2 class="text-sm font-bold text-slate-200">Your plan</h2>
-          <div class="flex gap-1.5">
-            <button id="ics" class="btn glass-2 rounded-lg px-2.5 py-1.5 text-[11px] text-emerald-300 font-medium">📅 Calendar</button>
-            <button id="dl" class="btn glass-2 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-medium">⬇ Download</button>
-            <button id="share" class="btn glass-2 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-medium">🔗 Share</button>
-          </div>
-        </div>
-        <div id="plan" class="space-y-4"></div>
+    <!-- TAB BAR (sticky) -->
+    <div class="sticky top-14 z-10 -mx-4 px-4 py-2 bg-[#06070a]/90 backdrop-blur border-b border-white/5">
+      <div class="flex gap-2 text-xs font-medium">
+        <button data-view="plan" class="nav btn px-4 py-2 rounded-full">📋 Plan</button>
+        <button data-view="ask" class="nav btn px-4 py-2 rounded-full">💬 Ask</button>
+        <button data-view="info" class="nav btn px-4 py-2 rounded-full">ℹ️ Info</button>
       </div>
+    </div>
 
-      <!-- SIDEBAR -->
-      <aside class="space-y-5">
-        <!-- ASK -->
-        <div class="glass rounded-2xl p-4">
-          <h2 class="text-sm font-bold mb-2">Ask Compass</h2>
-          <div id="chat" class="space-y-2.5 mb-3 max-h-72 overflow-y-auto"></div>
-          <div class="flex gap-2">
-            <input id="q" placeholder="what should I do now?" class="flex-1 glass-2 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-emerald-500/50" />
-            <button id="send" class="btn gradbg rounded-xl px-4 text-sm font-bold text-emerald-950">Ask</button>
-          </div>
-          <div class="mt-2 flex flex-wrap gap-1.5 text-[10.5px]">
-            <button class="ex btn px-2 py-1 rounded-lg glass-2 text-slate-400">claim credits?</button>
-            <button class="ex btn px-2 py-1 rounded-lg glass-2 text-slate-400">who to meet?</button>
-            <button class="ex btn px-2 py-1 rounded-lg glass-2 text-slate-400">next hour?</button>
-          </div>
+    <!-- PLAN VIEW -->
+    <div id="view-plan" class="space-y-4">
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div id="dayFilter" class="flex gap-1.5 flex-wrap text-[11px]"></div>
+        <div class="flex gap-1.5">
+          <button id="ics" class="btn glass-2 rounded-lg px-2.5 py-1.5 text-[11px] text-emerald-300 font-medium">📅 Calendar</button>
+          <button id="dl" class="btn glass-2 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-medium">⬇ Download</button>
+          <button id="share" class="btn glass-2 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-300 font-medium">🔗 Share</button>
         </div>
-        <!-- KEY DATES -->
-        <div class="glass rounded-2xl p-4">
-          <h2 class="text-sm font-bold mb-3">Key dates</h2>
-          <div id="dates" class="space-y-2.5"></div>
-        </div>
-        <!-- PERKS -->
-        <div class="glass rounded-2xl p-4">
-          <h2 class="text-sm font-bold mb-3">💰 Perks to claim</h2>
-          <div id="perks" class="space-y-2.5"></div>
-        </div>
-        <!-- SPONSORS & JUDGES -->
-        <div class="glass rounded-2xl p-4">
-          <h2 class="text-sm font-bold mb-3">🏢 Sponsors & judges</h2>
-          <div id="directory" class="space-y-2"></div>
-        </div>
-      </aside>
+      </div>
+      <div id="plan" class="space-y-4"></div>
+    </div>
+
+    <!-- ASK VIEW -->
+    <div id="view-ask" class="hidden glass rounded-2xl p-4">
+      <div id="chat" class="space-y-2.5 mb-3 max-h-[58vh] overflow-y-auto"></div>
+      <div class="flex gap-2">
+        <input id="q" placeholder="what should I do now?" class="flex-1 glass-2 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-emerald-500/50" />
+        <button id="send" class="btn gradbg rounded-xl px-4 text-sm font-bold text-emerald-950">Ask</button>
+      </div>
+      <div class="mt-2 flex flex-wrap gap-1.5 text-[10.5px]">
+        <button class="ex btn px-2 py-1 rounded-lg glass-2 text-slate-400">claim credits?</button>
+        <button class="ex btn px-2 py-1 rounded-lg glass-2 text-slate-400">who to meet?</button>
+        <button class="ex btn px-2 py-1 rounded-lg glass-2 text-slate-400">tell me about Guardian</button>
+        <button class="ex btn px-2 py-1 rounded-lg glass-2 text-slate-400">next hour?</button>
+      </div>
+    </div>
+
+    <!-- INFO VIEW -->
+    <div id="view-info" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="glass rounded-2xl p-4">
+        <h2 class="text-sm font-bold mb-3">📅 Key dates</h2>
+        <div id="dates" class="space-y-2.5"></div>
+      </div>
+      <div class="glass rounded-2xl p-4">
+        <h2 class="text-sm font-bold mb-3">💰 Perks to claim</h2>
+        <div id="perks" class="space-y-2.5"></div>
+      </div>
+      <div class="glass rounded-2xl p-4 sm:col-span-2">
+        <h2 class="text-sm font-bold mb-3">🏢 Sponsors & judges</h2>
+        <div id="directory" class="space-y-2"></div>
+      </div>
     </div>
   </section>
 
@@ -325,7 +329,7 @@ function enterApp(){
   $("#hdrCtrls").classList.remove("hidden"); $("#hdrCtrls").classList.add("flex");
   const tr = META.tracks.find(t=>t.id===profile.track);
   $("#hello").textContent = (profile.name ? `Hi ${profile.name} 👋  ` : "") + (tr?`Goal: ${tr.name} track`:"");
-  runAgentPlan(); refresh();
+  setView("plan"); runAgentPlan(); refresh();
 }
 $("#simDate").onchange = refresh; $("#simTime").onchange = refresh;
 
@@ -351,8 +355,11 @@ async function runAgentPlan(){
 function renderPlan(p){
   const dn={0:"Networking Nights",1:"Day 1 · Enable",2:"Day 2 · Integrate",3:"Day 3 · Design",4:"Day 4 · Build",5:"Day 5 · Demo"};
   const remByDay = {}; (p.removed||[]).forEach(r => (remByDay[r.day]=remByDay[r.day]||[]).push(r));
-  const dayNums = Array.from(new Set([...p.days.map(d=>d.day), ...Object.keys(remByDay).map(Number)])).sort((a,b)=>a-b);
+  let dayNums = Array.from(new Set([...p.days.map(d=>d.day), ...Object.keys(remByDay).map(Number)])).sort((a,b)=>a-b);
   const dayMap = {}; p.days.forEach(d=>dayMap[d.day]=d);
+  buildDayFilter(dayNums);
+  if(selectedDay!==null) dayNums = dayNums.filter(d=>d===selectedDay);
+  if(!dayNums.length){ $("#plan").innerHTML = `<div class="glass-2 rounded-xl p-4 text-xs text-slate-500 text-center">Nothing scheduled for this day.</div>`; return; }
   $("#plan").innerHTML = dayNums.map(dnum=>{
     const d = dayMap[dnum] || {day:dnum, sessions:[]};
     const rem = remByDay[dnum] || [];
@@ -505,6 +512,27 @@ async function discussSend(text){
 $("#dSend").onclick = () => { if($("#dInput").value.trim()){ discussSend($("#dInput").value.trim()); $("#dInput").value=""; } };
 $("#dInput").addEventListener("keydown", e => { if(e.key==="Enter") $("#dSend").click(); });
 document.querySelectorAll(".dq").forEach(b => b.onclick = () => discussSend(b.dataset.i));
+
+// ---- view tabs + day filter ----
+function setView(name){
+  ["plan","ask","info"].forEach(v => $("#view-"+v).classList.toggle("hidden", v!==name));
+  document.querySelectorAll(".nav").forEach(n=>{
+    const on = n.dataset.view===name;
+    n.className = "nav btn px-4 py-2 rounded-full "+(on?"text-emerald-950 font-semibold":"glass-2 text-slate-400");
+    n.style.background = on ? "linear-gradient(135deg,#00e676,#39d0ff)" : "";
+  });
+}
+document.querySelectorAll(".nav").forEach(n => n.onclick = () => setView(n.dataset.view));
+
+let selectedDay = null;
+const DAY_LABELS = {0:"Networking",1:"Day 1",2:"Day 2",3:"Day 3",4:"Day 4",5:"Day 5"};
+function buildDayFilter(dayNums){
+  const days = dayNums || [];
+  const chip = (val,label)=>{ const on = (val==="all"&&selectedDay===null) || String(selectedDay)===String(val);
+    return `<button data-day="${val}" class="dayf btn px-2.5 py-1 rounded-full ${on?'text-emerald-950 font-semibold':'glass-2 text-slate-400'}" ${on?'style="background:linear-gradient(135deg,#00e676,#39d0ff)"':''}>${label}</button>`; };
+  $("#dayFilter").innerHTML = chip("all","All") + days.map(d=>chip(d, DAY_LABELS[d]||("Day "+d))).join("");
+  $("#dayFilter").querySelectorAll(".dayf").forEach(b=>b.onclick=()=>{ selectedDay = b.dataset.day==="all"?null:Number(b.dataset.day); renderPlan(lastPlan); });
+}
 
 init();
 </script>
