@@ -263,7 +263,10 @@ async function init(){
   $("#simDate").innerHTML = days.map(([d,l])=>`<option value="${d}">${l}</option>`).join("");
   renderDates(); renderPerks(); renderDirectory();
   const sp = new URLSearchParams(location.search).get("p");
-  if(sp){ try{ profile = JSON.parse(decodeURIComponent(atob(sp))); localStorage.setItem("compass",JSON.stringify(profile)); }catch(e){} }
+  if(sp){
+    try{ profile = JSON.parse(decodeURIComponent(atob(sp))); localStorage.setItem("compass",JSON.stringify(profile)); localStorage.removeItem("compass_plan"); fromShare=true; }catch(e){}
+    history.replaceState({}, "", location.pathname);   // clean the URL so refresh uses the cache
+  }
   if (profile) enterApp();
 }
 
@@ -330,8 +333,19 @@ $("#go").onclick = () => {
 };
 $("#editBtn").onclick = () => { $("#app").classList.add("hidden"); $("#onboard").classList.remove("hidden"); $("#hdrCtrls").classList.add("hidden"); $("#hdrCtrls").classList.remove("flex"); };
 
-let lastSummary = "", lastBrain = "local";
+let lastSummary = "", lastBrain = "local", fromShare = false;
 function savePlan(){ try{ localStorage.setItem("compass_plan", JSON.stringify({plan:lastPlan, summary:lastSummary, brain:lastBrain})); }catch(e){} }
+async function loadSharedPlan(){
+  $("#summary").classList.add("hidden");
+  $("#trace").innerHTML = `<div class="text-slate-500">Loading shared plan…</div>`;
+  $("#plan").innerHTML = skeletonPlan(3);
+  let p;
+  try { p = await (await fetch("/api/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(profile)})).json(); }
+  catch(e){ return runAgentPlan(); }
+  brainBadge("local"); lastBrain="local"; lastSummary="";
+  $("#trace").innerHTML = `<div class="text-slate-400">${profile.name?esc(profile.name)+"'s ":""}shared plan, loaded instantly. Tap ↻ Re-plan to regenerate it with the agent for yourself.</div>`;
+  lastPlan = p; renderPlan(p); savePlan();
+}
 function renderCachedPlan(){
   let c; try{ c = JSON.parse(localStorage.getItem("compass_plan")||"null"); }catch(e){ c=null; }
   if(!c || !c.plan) return false;
@@ -348,7 +362,9 @@ function enterApp(){
   const tr = META.tracks.find(t=>t.id===profile.track);
   $("#hello").textContent = (profile.name ? `Hi ${profile.name} 👋  ` : "") + (tr?`Goal: ${tr.name} track`:"");
   setView("plan");
-  if(!renderCachedPlan()) runAgentPlan();   // don't re-run the agent on every refresh
+  if(renderCachedPlan()){}                 // same browser: restore instantly
+  else if(fromShare){ loadSharedPlan(); }  // shared link: build deterministically, no agent
+  else { runAgentPlan(); }                 // first time: run the agent
   refresh();
 }
 $("#replan").onclick = () => runAgentPlan();
