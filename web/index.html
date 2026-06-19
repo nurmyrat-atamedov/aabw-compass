@@ -27,6 +27,11 @@
   .pop{ animation:pop .5s cubic-bezier(.2,.9,.2,1) both; }
   @keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
   .pd{ animation:pd 1.6s ease-in-out infinite; } @keyframes pd{0%,100%{opacity:.35}50%{opacity:1}}
+  .spin{ animation:spin .9s linear infinite; } @keyframes spin{to{transform:rotate(360deg)}}
+  .tdots::after{ content:'...'; animation:td 1.3s steps(4,end) infinite; display:inline-block; width:1.1em; text-align:left; }
+  @keyframes td{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+  .shim{ background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.10) 37%,rgba(255,255,255,.04) 63%); background-size:400% 100%; animation:shim 1.4s ease infinite; }
+  @keyframes shim{0%{background-position:100% 0}100%{background-position:-100% 0}}
   .btn{ transition:.15s; } .btn:hover{ transform:translateY(-1px); filter:brightness(1.06); }
   ::-webkit-scrollbar{height:7px;width:7px}::-webkit-scrollbar-thumb{background:#2a2d34;border-radius:9px}
   details>summary{ list-style:none; cursor:pointer; } details>summary::-webkit-details-marker{ display:none; }
@@ -170,6 +175,21 @@ function brainBadge(b){ const e=$("#brain"); e.textContent = b==="bedrock"?"● 
   e.className = "text-[10px] mono px-2 py-0.5 rounded-full "+(b==="bedrock"?"bg-emerald-500/15 text-emerald-300":"bg-slate-700/40 text-slate-500"); }
 const esc = s => (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;");
 
+function startThinking(el, steps){
+  let i = 0;
+  const render = () => { el.innerHTML =
+    `<div class="flex items-center gap-2.5 text-slate-300 fade">
+       <span class="inline-block w-4 h-4 rounded-full border-2 border-emerald-400/25 border-t-emerald-400 spin"></span>
+       <span class="mono text-[12px]">${steps[i % steps.length]}<span class="tdots"></span></span>
+     </div>`; i++; };
+  render(); return setInterval(render, 1500);
+}
+function skeletonPlan(n){
+  let cards = "";
+  for(let k=0;k<(n||3);k++) cards += `<div class="glass-2 rounded-xl px-3.5 py-3"><div class="shim h-3.5 w-3/4 rounded mb-2"></div><div class="shim h-2.5 w-1/2 rounded"></div></div>`;
+  return `<div class="space-y-3"><div class="shim h-3 w-24 rounded"></div><div class="space-y-2">${cards}</div></div>`;
+}
+
 async function init(){
   META = await (await fetch("/api/meta")).json();
   const s = META.stats;
@@ -237,9 +257,16 @@ $("#simDate").onchange = refresh; $("#simTime").onchange = refresh;
 
 async function runAgentPlan(){
   $("#summary").classList.add("hidden");
-  $("#trace").innerHTML = `<div class="flex items-center gap-2 text-slate-500"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pd"></span>agent is planning your week…</div>`;
-  const r = await (await fetch("/api/agent/plan",{method:"POST",headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({profile, date:$("#simDate").value, time:$("#simTime").value})})).json();
+  $("#brain").textContent = ""; $("#brain").className = "text-[10px] mono px-2 py-0.5 rounded-full";
+  const tid = startThinking($("#trace"), [
+    "waking the agent", "reading your goals", "searching 22 sessions",
+    "checking perks & mentors", "solving your conflict-free schedule", "routing across venues", "finalizing your week"]);
+  $("#plan").innerHTML = skeletonPlan(3);
+  let r;
+  try {
+    r = await (await fetch("/api/agent/plan",{method:"POST",headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({profile, date:$("#simDate").value, time:$("#simTime").value})})).json();
+  } finally { clearInterval(tid); }
   brainBadge(r.brain);
   $("#trace").innerHTML=""; let i=0;
   (function step(){ if(i>=r.trace.length){ if(r.summary){$("#summary").textContent=r.summary;$("#summary").classList.remove("hidden");} return; }
@@ -298,9 +325,13 @@ $("#ics").onclick = async () => {
 async function ask(text){
   const chat=$("#chat");
   chat.insertAdjacentHTML("beforeend",`<div class="text-right fade"><span class="inline-block gradbg rounded-2xl rounded-br-sm px-3 py-1.5 text-[13px] text-emerald-950 font-medium">${esc(text)}</span></div>`);
-  const t=document.createElement("div"); t.className="text-[11px] text-slate-500 flex items-center gap-1.5"; t.innerHTML=`<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pd"></span>thinking…`; chat.appendChild(t);
-  const r = await (await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({profile, question:text, date:$("#simDate").value, time:$("#simTime").value})})).json();
+  const t=document.createElement("div"); chat.appendChild(t); chat.scrollTop=chat.scrollHeight;
+  const tid = startThinking(t, ["thinking","calling tools","grounding in the schedule"]);
+  let r;
+  try {
+    r = await (await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({profile, question:text, date:$("#simDate").value, time:$("#simTime").value})})).json();
+  } finally { clearInterval(tid); }
   t.remove();
   const tr = r.trace ? `<div class="mt-1.5 text-[10px] mono text-slate-600 border-l border-white/10 pl-2 space-y-0.5">${traceHTML(r.trace.filter(s=>s.type!=="answer"))}</div>` : "";
   chat.insertAdjacentHTML("beforeend",`<div class="fade"><span class="inline-block glass-2 rounded-2xl rounded-bl-sm px-3 py-1.5 text-[13px] leading-relaxed">${esc(r.answer).replace(/\n/g,"<br>")}</span> <span class="text-[9px] mono ${r.brain==="bedrock"?"text-emerald-500":"text-slate-600"}">${r.brain}</span>${tr}</div>`);
