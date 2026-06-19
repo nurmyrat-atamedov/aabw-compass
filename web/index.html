@@ -153,6 +153,11 @@
           <h2 class="text-sm font-bold mb-3">💰 Perks to claim</h2>
           <div id="perks" class="space-y-2.5"></div>
         </div>
+        <!-- SPONSORS & JUDGES -->
+        <div class="glass rounded-2xl p-4">
+          <h2 class="text-sm font-bold mb-3">🏢 Sponsors & judges</h2>
+          <div id="directory" class="space-y-2"></div>
+        </div>
       </aside>
     </div>
   </section>
@@ -248,7 +253,7 @@ async function init(){
     META.tracks.map(t => `<option value="${t.id}">${t.name} · ${t.sponsor}</option>`).join("");
   const days = [["2026-07-08","Day 1"],["2026-07-09","Day 2"],["2026-07-10","Day 3"],["2026-07-11","Day 4"],["2026-07-12","Day 5"]];
   $("#simDate").innerHTML = days.map(([d,l])=>`<option value="${d}">${l}</option>`).join("");
-  renderDates(); renderPerks();
+  renderDates(); renderPerks(); renderDirectory();
   const sp = new URLSearchParams(location.search).get("p");
   if(sp){ try{ profile = JSON.parse(decodeURIComponent(atob(sp))); localStorage.setItem("compass",JSON.stringify(profile)); }catch(e){} }
   if (profile) enterApp();
@@ -267,6 +272,25 @@ function renderPerks(){
       <div class="text-[11px] text-emerald-400/80">${esc(p.value)}</div>
       <div class="text-[10.5px] text-slate-500 mt-0.5">${esc(p.claim)}</div>
     </div>`).join("");
+}
+function renderDirectory(){
+  const liUrl = (n,o) => "https://www.linkedin.com/search/results/people/?keywords="+encodeURIComponent(n+" "+o);
+  const sp = (META.sponsors||[]).map(s=>`
+    <div class="glass-2 rounded-xl px-3 py-2">
+      <div class="flex items-center justify-between gap-2">
+        <div class="text-[12.5px] font-semibold text-slate-200">${esc(s.name)}</div>
+        <a href="${esc(s.website)}" target="_blank" rel="noopener" class="text-[10px] text-cyan-300 btn shrink-0">site ↗</a>
+      </div>
+      <div class="text-[10.5px] text-slate-500 mt-0.5 leading-snug">${esc(s.blurb)}</div>
+    </div>`).join("");
+  const ppl = (META.mentors||[]).slice(0,8).map(m=>`
+    <div class="flex items-center justify-between gap-2">
+      <div class="text-[11.5px] leading-tight"><span class="text-slate-300">${esc(m.name)}</span> <span class="text-slate-600">· ${esc(m.role)}, ${esc(m.org)}</span></div>
+      <a href="${liUrl(m.name,m.org)}" target="_blank" rel="noopener" class="text-[10px] text-cyan-300 shrink-0 btn">in ↗</a>
+    </div>`).join("");
+  $("#directory").innerHTML = sp
+    + `<div class="text-[10px] uppercase tracking-wider text-slate-600 pt-1.5">Judges & mentors</div>` + ppl
+    + `<div class="text-[10px] text-slate-600 pt-1.5 leading-snug">Ask Compass "tell me about Guardian" or "who judges the AWS track".</div>`;
 }
 
 let cvInterests = [], cvSummary = null, cvSkills = [];

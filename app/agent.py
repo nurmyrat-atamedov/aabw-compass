@@ -55,6 +55,26 @@ def tool_find_perks(stack: str) -> list[dict]:
     return data.perks()
 
 
+def tool_lookup_directory(query: str) -> dict:
+    """Search sponsors, judges and mentors by name, company, track or topic."""
+    q = (query or "").lower()
+    words = q.split()
+    sp = []
+    for s in data.sponsors():
+        hay = " ".join([s["name"], s.get("track", ""), s.get("blurb", "")]).lower()
+        if not q or any(w in hay for w in words):
+            sp.append({"name": s["name"], "track": s.get("track"),
+                       "blurb": s.get("blurb"), "website": s.get("website")})
+    ppl = []
+    for m in data.mentors():
+        hay = " ".join([m["name"], m["role"], m["org"],
+                        " ".join(m.get("tags", [])), " ".join(m.get("tracks", []))]).lower()
+        if not q or any(w in hay for w in words):
+            ppl.append({"name": m["name"], "role": m["role"], "org": m["org"],
+                        "tracks": m.get("tracks", [])})
+    return {"sponsors": sp[:5], "people": ppl[:6]}
+
+
 def _run_tool(name: str, args: dict, profile: dict, ctx: dict):
     # In edit sessions ctx["state"] is the live, mutating profile.
     eff = ctx.get("state", profile)
@@ -68,6 +88,8 @@ def _run_tool(name: str, args: dict, profile: dict, ctx: dict):
         return tool_find_mentors(args.get("topic", ""))
     if name == "find_perks":
         return tool_find_perks(args.get("stack", ""))
+    if name == "lookup_directory":
+        return tool_lookup_directory(args.get("query", ""))
     if name in ("replace_session", "remove_session"):
         sid = args.get("session_id", "")
         action = "replace" if name == "replace_session" else "remove"
@@ -98,6 +120,8 @@ def _summarize(name: str, result) -> str:
     if name == "now_next":
         bits = [k for k in ("now", "next", "dont_miss") if result.get(k)]
         return "computed " + ", ".join(bits)
+    if name == "lookup_directory":
+        return f"{len(result.get('sponsors', []))} sponsors, {len(result.get('people', []))} people"
     if isinstance(result, list):
         return f"{len(result)} results"
     return "ok"
@@ -110,6 +134,8 @@ TOOLSPEC = [
                   "inputSchema": {"json": {"type": "object", "properties": {"topic": {"type": "string"}}, "required": ["topic"]}}}},
     {"toolSpec": {"name": "find_perks", "description": "Find credits/perks the builder can claim.",
                   "inputSchema": {"json": {"type": "object", "properties": {"stack": {"type": "string"}}, "required": ["stack"]}}}},
+    {"toolSpec": {"name": "lookup_directory", "description": "Look up sponsors, judges and mentors by name, company, track or topic. Use for 'tell me about Guardian', 'who judges the AWS track', 'who should I meet for fintech'.",
+                  "inputSchema": {"json": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}}},
     {"toolSpec": {"name": "now_next", "description": "What to do now/next/not-miss for a date and time.",
                   "inputSchema": {"json": {"type": "object", "properties": {"date": {"type": "string"}, "time": {"type": "string"}}, "required": []}}}},
     {"toolSpec": {"name": "build_plan", "description": "Compute the builder's conflict-free, travel-aware personal schedule.",
@@ -379,9 +405,14 @@ def _fallback_ask(question: str, profile: dict, ctx: dict) -> dict:
     elif any(w in q for w in ["credit", "perk", "free", "claim"]):
         ps = tool_find_perks(q); trace.append({"type": "tool", "tool": "find_perks", "input": {"stack": q}, "summary": _summarize("find_perks", ps)})
         ans = " | ".join(f"{p['name']}: {p['value']} ({p['claim']})" for p in ps)
+    elif any(w in q for w in ["sponsor", "about", "company", "guardian", "kfc", "vng", "tasco", "nova", "vietjet", "phong", "aws"]):
+        d = tool_lookup_directory(q); trace.append({"type": "tool", "tool": "lookup_directory", "input": {"query": q}, "summary": _summarize("lookup_directory", d)})
+        sp = " | ".join(f"{s['name']}: {s['blurb']}" for s in d["sponsors"])
+        pp = " | ".join(f"{p['name']}, {p['role']} ({p['org']})" for p in d["people"])
+        ans = (sp + (" — Judges/mentors: " + pp if pp else "")) or "No match in the directory."
     elif any(w in q for w in ["mentor", "judge", "meet", "who"]):
-        ms = tool_find_mentors(q); trace.append({"type": "tool", "tool": "find_mentors", "input": {"topic": q}, "summary": _summarize("find_mentors", ms)})
-        ans = " | ".join(f"{m['name']}, {m['role']} ({m['org']})" for m in ms)
+        d = tool_lookup_directory(q); trace.append({"type": "tool", "tool": "lookup_directory", "input": {"query": q}, "summary": _summarize("lookup_directory", d)})
+        ans = " | ".join(f"{p['name']}, {p['role']} ({p['org']})" for p in d["people"]) or "No one matched in the directory."
     else:
         hits = tool_search_sessions(q); trace.append({"type": "tool", "tool": "search_sessions", "input": {"query": q}, "summary": _summarize("search_sessions", hits)})
         ans = " | ".join(f"{h['title']} (Day {h['day']}, {h['start']}, {h['venue']})" for h in hits) or \

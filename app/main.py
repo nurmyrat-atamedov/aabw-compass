@@ -64,6 +64,7 @@ def meta():
         "key_dates": data.key_dates(),
         "perks": data.perks(),
         "mentors": data.mentors(),
+        "sponsors": data.sponsors(),
         "venues": [v for v in data.load()["venues"] if v["id"] != "tbd"],
         "stats": {
             "sessions": len(data.sessions()),

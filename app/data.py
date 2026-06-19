@@ -65,6 +65,10 @@ def mentors() -> list[dict]:
     return load().get("mentors", [])
 
 
+def sponsors() -> list[dict]:
+    return load().get("sponsors", [])
+
+
 def perks() -> list[dict]:
     return load().get("perks", [])
 

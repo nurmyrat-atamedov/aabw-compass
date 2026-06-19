@@ -55,6 +55,17 @@
     { "id": "robotics", "name": "Robotics & Physical AI", "sponsor": "TBA", "kind": "enterprise", "tags": ["robotics", "physical"] },
     { "id": "builder_exp", "name": "Builder Experience", "sponsor": "GenAI Fund", "kind": "pre_event", "tags": ["builders", "tooling"] }
   ],
+  "sponsors": [
+    { "name": "Amazon Web Services", "track": "aws", "website": "https://aws.amazon.com", "blurb": "The world's largest cloud platform and Amazon's profit engine (~$128B revenue, 2025). On the Built with AWS track, judges value AWS-native, production-ready agent architecture." },
+    { "name": "Tasco", "track": "mobility", "website": "https://tasco.com.vn", "blurb": "Vietnamese infrastructure group behind VETC electronic tolling and a growing auto-distribution arm. Listed on HOSE (HUT). Cares about mobility, traffic and tolling data." },
+    { "name": "Nova Group", "track": "realestate", "website": "https://www.novaland.com.vn", "blurb": "One of Vietnam's largest property developers (NovaWorld, Aqua City). Priorities: property sales, customer experience and smart real estate." },
+    { "name": "KFC", "track": "fnb", "website": "https://kfcvietnam.com.vn", "blurb": "Global quick-service restaurant chain (Yum! Brands). Looking for ordering, loyalty, upsell and customer-service automation." },
+    { "name": "VNG Games", "track": "gaming", "website": "https://www.vng.com.vn", "blurb": "Publishing arm of VNG, Vietnam's first tech unicorn (owns Zalo and ZaloPay). Interested in AI NPCs, game tooling and player engagement." },
+    { "name": "Phong Vu", "track": "retail", "website": "https://phongvu.vn", "blurb": "Major Vietnamese computer and electronics retailer. Priorities: shopping assistants, recommendations and customer support." },
+    { "name": "Galaxy Holdings | Vietjet", "track": "aviation", "website": "https://www.vietjetair.com", "blurb": "Vietjet is a major low-cost airline (HOSE: VJC); Galaxy is a media and investment group. Focus: booking, rebooking and customer-service agents." },
+    { "name": "Guardian Vietnam", "track": "healthcare", "website": "https://guardian.com.vn", "blurb": "Leading health & beauty retail chain with 130+ stores, owned by DFI Retail Group (Dairy Farm). Wants personalized wellness and product-recommendation assistants." },
+    { "name": "GenAI Fund", "track": "builder_exp", "website": "https://genaifund.ai", "blurb": "Southeast Asia's first generative-AI-focused venture fund and the AABW organizer. Runs the Builder Experience track and evaluates winning builds for deployment." }
+  ],
   "mentors": [
     { "name": "Girish Patil", "role": "Tech Lead - Applied AI", "org": "AWS", "tracks": ["aws"], "tags": ["aws", "cloud", "agents"] },
     { "name": "Nguyen Gia Hung", "role": "Head of Solutions Architect, VN & Cambodia", "org": "AWS", "tracks": ["aws"], "tags": ["aws", "architecture"] },
