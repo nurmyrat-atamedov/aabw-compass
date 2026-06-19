@@ -172,6 +172,7 @@ def build_plan(profile: dict) -> dict:
                 "partner": c.get("partner"),
                 "type": c.get("type"),
                 "description": c.get("description"),
+                "signup": c.get("signup"),
                 "tags": c.get("tags", []),
                 "why": c["why"],
                 "score": round(c["_score"], 2),

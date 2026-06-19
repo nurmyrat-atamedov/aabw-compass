@@ -69,7 +69,7 @@
   <section id="onboard" class="max-w-lg mx-auto space-y-5 fade pt-4">
     <div class="text-center">
       <div class="text-[30px] sm:text-[34px] font-black leading-[1.1]">Your week at <span class="grad">Build Week</span>,<br>planned by an agent.</div>
-      <p class="text-sm text-slate-400 mt-3">2,000 builders. 3 venues. 30+ sessions. Tell me what you're here for and the agent runs your week, in real time.</p>
+      <p class="text-sm text-slate-400 mt-3">2,000 builders, 4 venues, 5 packed days. Tell me what you're here for and the agent runs your week, in real time.</p>
     </div>
     <div id="statStrip" class="grid grid-cols-4 gap-2 text-center"></div>
     <div class="glass rounded-2xl p-5 space-y-4">
@@ -383,7 +383,7 @@ function renderPlan(p){
             </div>
             <div class="text-right shrink-0"><div class="text-[11px] mono text-slate-300">${s.start}</div><div class="text-[9px] text-slate-600">${s.end}</div></div>
           </summary>
-          ${s.description?`<div class="px-3.5 pb-3 -mt-1 text-[12px] text-slate-400 leading-relaxed border-t border-white/5 pt-2">${esc(s.description)}</div>`:""}
+          ${(s.description||s.signup)?`<div class="px-3.5 pb-3 -mt-1 text-[12px] text-slate-400 leading-relaxed border-t border-white/5 pt-2">${s.description?esc(s.description):""}${s.signup?` <a href="${esc(s.signup)}" target="_blank" rel="noopener" class="text-cyan-300 btn">· RSVP ↗</a>`:""}</div>`:""}
         </details>`).join("")}
         ${rem.map(r=>`
         <div class="rounded-xl border border-dashed border-white/10 px-3.5 py-2.5 flex justify-between items-center gap-3">
