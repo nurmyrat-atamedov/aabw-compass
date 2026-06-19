@@ -80,6 +80,14 @@ def _run_tool(name: str, args: dict, profile: dict, ctx: dict):
                 "now_filled_by": added,
                 "note": ("" if info["filled"]
                          else "No other session occupies that time window, so the slot is now free.")}
+    if name == "add_session":
+        sid = args.get("session_id", "")
+        plan, new_state, info = planner.add_session(eff, sid)
+        ctx["state"] = new_state
+        ctx["plan"] = plan
+        by_id = {s["id"]: s for s in data.sessions()}
+        return {"added_id": sid, "added_ok": info["added_ok"],
+                "title": by_id.get(sid, {}).get("title", sid)}
     return {"error": f"unknown tool {name}"}
 
 
@@ -112,6 +120,8 @@ EDIT_TOOLSPEC = TOOLSPEC + [
     {"toolSpec": {"name": "replace_session", "description": "Replace ONE session (by id) with a better alternative for the builder's goals. Every other session stays exactly as is.",
                   "inputSchema": {"json": {"type": "object", "properties": {"session_id": {"type": "string"}}, "required": ["session_id"]}}}},
     {"toolSpec": {"name": "remove_session", "description": "Remove ONE session (by id) from the plan. Every other session stays exactly as is.",
+                  "inputSchema": {"json": {"type": "object", "properties": {"session_id": {"type": "string"}}, "required": ["session_id"]}}}},
+    {"toolSpec": {"name": "add_session", "description": "Add a session (by id) back into the plan, e.g. to fill a freed time slot. Pins it so it stays.",
                   "inputSchema": {"json": {"type": "object", "properties": {"session_id": {"type": "string"}}, "required": ["session_id"]}}}},
 ]
 
@@ -241,6 +251,14 @@ def _fallback_edit(profile: dict, instruction: str, focus: dict, ctx: dict) -> d
     q = (instruction or "").lower()
     sid = (focus or {}).get("id")
     trace = [{"type": "think", "text": f"edit request on {sid}"}]
+    if sid and (("add" in q) or ("re-add" in q) or ("readd" in q) or ("put it back" in q) or ("add it back" in q)):
+        plan, new_state, info = planner.add_session(profile, sid)
+        trace.append({"type": "tool", "tool": "add_session", "input": {"session_id": sid},
+                      "summary": "added back" if info["added_ok"] else "could not add"})
+        ans = ("Done. I added it back into your plan and pinned it so it stays."
+               if info["added_ok"] else "I couldn't fit that back without a conflict.")
+        trace.append({"type": "answer", "text": ans})
+        return {"answer": ans, "trace": trace, "brain": "local", "state": new_state, "plan": plan}
     if sid and any(w in q for w in ["replace", "swap", "change", "different", "instead", "another", "remove", "delete", "drop"]):
         action = "remove" if any(w in q for w in ["remove", "delete", "drop"]) else "replace"
         plan, new_state, info = planner.edit_plan(profile, action, sid)

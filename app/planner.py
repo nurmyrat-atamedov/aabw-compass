@@ -180,7 +180,20 @@ def build_plan(profile: dict) -> dict:
         ]
         if clean:
             by_day.append({"day": day, "date": clean[0]["date"], "sessions": clean})
-    return {"profile": profile, "days": by_day}
+
+    # Freed slots: sessions the user dropped, kept visible so they can re-add.
+    by_id = {s["id"]: s for s in data.sessions()}
+    removed = []
+    for eid in (profile.get("excluded") or []):
+        s = by_id.get(eid)
+        if not s:
+            continue
+        removed.append({
+            "id": s["id"], "title": s["title"], "day": s["day"], "date": s["date"],
+            "start": s["start"], "end": s["end"], "partner": s.get("partner"),
+            "venue": venues.get(s["venue"], {}).get("name", s["venue"]),
+        })
+    return {"profile": profile, "days": by_day, "removed": removed}
 
 
 def edit_plan(profile: dict, action: str, session_id: str) -> tuple[dict, dict, dict]:
@@ -208,6 +221,16 @@ def edit_plan(profile: dict, action: str, session_id: str) -> tuple[dict, dict, 
     added = sorted(new_ids - (before_ids - {session_id}))
     info = {"removed": session_id, "added": added, "filled": bool(added)}
     return new_plan, new_profile, info
+
+
+def add_session(profile: dict, session_id: str) -> tuple[dict, dict, dict]:
+    """Re-add a previously removed session and pin it so it stays."""
+    excluded = [x for x in (profile.get("excluded") or []) if x != session_id]
+    pinned = list(dict.fromkeys((profile.get("pinned") or []) + [session_id]))
+    new_profile = {**profile, "excluded": excluded, "pinned": pinned}
+    plan = build_plan(new_profile)
+    new_ids = {s["id"] for d in plan["days"] for s in d["sessions"]}
+    return plan, new_profile, {"added": session_id, "added_ok": session_id in new_ids}
 
 
 def now_next(profile: dict, now_date: str, now_time: str) -> dict:

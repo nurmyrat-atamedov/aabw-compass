@@ -326,10 +326,16 @@ async function runAgentPlan(){
 
 function renderPlan(p){
   const dn={0:"Networking Nights",1:"Day 1 · Enable",2:"Day 2 · Integrate",3:"Day 3 · Design",4:"Day 4 · Build",5:"Day 5 · Demo"};
-  $("#plan").innerHTML = p.days.map(d=>`
+  const remByDay = {}; (p.removed||[]).forEach(r => (remByDay[r.day]=remByDay[r.day]||[]).push(r));
+  const dayNums = Array.from(new Set([...p.days.map(d=>d.day), ...Object.keys(remByDay).map(Number)])).sort((a,b)=>a-b);
+  const dayMap = {}; p.days.forEach(d=>dayMap[d.day]=d);
+  $("#plan").innerHTML = dayNums.map(dnum=>{
+    const d = dayMap[dnum] || {day:dnum, sessions:[]};
+    const rem = remByDay[dnum] || [];
+    return `
     <div class="fade">
       <div class="flex items-center justify-between mb-2">
-        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">${dn[d.day]||("Day "+d.day)}</div>
+        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">${dn[dnum]||("Day "+dnum)}</div>
         <div class="text-[10px] text-slate-600">${d.sessions.length} picks</div>
       </div>
       <div class="space-y-2">${d.sessions.map(s=>`
@@ -344,12 +350,33 @@ function renderPlan(p){
             <div class="text-right shrink-0"><div class="text-[11px] mono text-slate-300">${s.start}</div><div class="text-[9px] text-slate-600">${s.end}</div></div>
           </summary>
           ${s.description?`<div class="px-3.5 pb-3 -mt-1 text-[12px] text-slate-400 leading-relaxed border-t border-white/5 pt-2">${esc(s.description)}</div>`:""}
-        </details>`).join("")}</div>
-    </div>`).join("");
+        </details>`).join("")}
+        ${rem.map(r=>`
+        <div class="rounded-xl border border-dashed border-white/10 px-3.5 py-2.5 flex justify-between items-center gap-3">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-600">Free slot ${r.start}–${r.end}</div>
+            <div class="text-[12px] text-slate-500 line-through">${esc(r.title)}</div>
+            <div class="mt-1.5 flex gap-1.5">
+              <button class="readd text-[11px] text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-md px-2 py-1 btn" data-id="${r.id}">↩ Re-add</button>
+              <button class="discuss text-[11px] text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-md px-2 py-1 btn" data-id="${r.id}">💬 Discuss</button>
+            </div>
+          </div>
+          <div class="text-[10px] mono text-slate-600">${r.start}</div>
+        </div>`).join("")}
+      </div>
+    </div>`;}).join("");
   bindDiscuss();
 }
 function bindDiscuss(){
   document.querySelectorAll(".discuss").forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); openDiscuss(b.dataset.id); });
+  document.querySelectorAll(".readd").forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); readd(b.dataset.id); });
+}
+async function readd(id){
+  profile.excluded = (profile.excluded||[]).filter(x=>x!==id);
+  profile.pinned = Array.from(new Set([...(profile.pinned||[]), id]));
+  localStorage.setItem("compass", JSON.stringify(profile));
+  const p = await (await fetch("/api/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(profile)})).json();
+  lastPlan = p; renderPlan(p); refresh(); flash("↩ Added back to your plan");
 }
 
 async function refresh(){
@@ -417,12 +444,16 @@ document.querySelectorAll(".ex").forEach(b => b.onclick = () => ask(b.textConten
 // ---- per-session Discuss (conversational plan editing) ----
 let discussFocus = null;
 function openDiscuss(id){
-  const s = lastPlan && lastPlan.days.flatMap(d=>d.sessions).find(x=>x.id===id);
+  const all = lastPlan ? [...lastPlan.days.flatMap(d=>d.sessions), ...(lastPlan.removed||[])] : [];
+  const s = all.find(x=>x.id===id);
   if(!s) return;
+  const isFreed = (lastPlan.removed||[]).some(r=>r.id===id);
   discussFocus = {id:s.id, title:s.title, start:s.start, venue:s.venue};
   $("#dTitle").textContent = s.title;
   $("#dMeta").textContent = `${s.start}–${s.end} · ${s.venue}${s.partner?" · "+s.partner:""}`;
-  $("#dChat").innerHTML = `<div class="text-[12px] text-slate-500">Ask me to replace or remove this, or why it's here. I'll change only this slot and leave the rest of your plan untouched.</div>`;
+  $("#dChat").innerHTML = isFreed
+    ? `<div class="text-[12px] text-slate-500">This time slot is free. Ask me to add this session back, or what else could go here. I'll only touch this slot.</div>`
+    : `<div class="text-[12px] text-slate-500">Ask me to replace or remove this, or why it's here. I'll change only this slot and leave the rest of your plan untouched.</div>`;
   const m=$("#discuss"); m.classList.remove("hidden"); m.classList.add("flex"); setTimeout(()=>$("#dInput").focus(),50);
 }
 function closeDiscuss(){ const m=$("#discuss"); m.classList.add("hidden"); m.classList.remove("flex"); }
