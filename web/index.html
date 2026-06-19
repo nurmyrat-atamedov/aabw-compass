@@ -350,7 +350,7 @@ async function runAgentPlan(){
   } finally { clearInterval(tid); }
   brainBadge(r.brain);
   $("#trace").innerHTML=""; let i=0;
-  (function step(){ if(i>=r.trace.length){ if(r.summary){$("#summary").textContent=r.summary;$("#summary").classList.remove("hidden");} return; }
+  (function step(){ if(i>=r.trace.length){ if(r.summary){$("#summary").innerHTML=mdLite(r.summary);$("#summary").classList.remove("hidden");} return; }
     $("#trace").insertAdjacentHTML("beforeend", traceHTML([r.trace[i]])); i++; setTimeout(step,240); })();
   lastPlan = r.plan; renderPlan(r.plan);
 }

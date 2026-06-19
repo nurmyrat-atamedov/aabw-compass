@@ -229,15 +229,34 @@ def run_plan(profile: dict, ctx: dict) -> dict:
         f"Their goals: {goals}. Track: {track}. {cv}"
         "First investigate what matters using search_sessions, and find_perks and/or "
         "find_mentors if relevant. Then call build_plan to produce the schedule. "
-        "Finally write a 2-sentence strategy summary of how this week serves their goals"
-        + (" and their background." if cv else ".")
+        "Then STOP. Your final message must be AT MOST 2 sentences of plain-prose strategy "
+        "explaining how this week serves their goals"
+        + (" and background. " if cv else ". ")
+        + "Do NOT reproduce the schedule, sessions, times, venues, or a perks list. Those are "
+        "shown separately in the app. No markdown headings, no bullet lists."
     )
     res = _bedrock_loop(seed, ASK_SYSTEM, profile, ctx, max_turns=8)
     if res and not res.get("_error"):
         plan = res["captured"].get("build_plan") or planner.build_plan(profile)
-        return {"summary": res.get("final") or "Plan ready.", "plan": plan,
+        return {"summary": _clean_summary(res.get("final")), "plan": plan,
                 "trace": res["trace"], "brain": "bedrock"}
     return _fallback_plan(profile, ctx)
+
+
+def _clean_summary(text: str | None) -> str:
+    """Keep the summary to short prose: drop any schedule/list the model dumps."""
+    if not text:
+        return "Your week is planned."
+    t = text.strip()
+    # Cut at the first markdown heading or list block (a dumped schedule/perks list).
+    for marker in ["\n#", "\n##", "\n- ", "\n* ", "\n1.", "\n2.", "\n•", "\n\n-"]:
+        idx = t.find(marker)
+        if idx != -1:
+            t = t[:idx].strip()
+    t = t.lstrip("#").strip()
+    if len(t) > 400:
+        t = t[:400].rsplit(".", 1)[0].strip() + "."
+    return t or "Your week is planned."
 
 
 EDIT_SYSTEM = (
