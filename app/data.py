@@ -22,6 +22,18 @@ def load() -> dict:
         return json.load(f)
 
 
+def reload() -> None:
+    """Drop the cached data so the next load() re-reads the file."""
+    load.cache_clear()
+
+
+def save(new_data: dict) -> None:
+    """Persist edited event data and hot-reload it (used by the admin panel)."""
+    with open(DATA_PATH, "w", encoding="utf-8") as f:
+        json.dump(new_data, f, indent=2, ensure_ascii=False)
+    load.cache_clear()
+
+
 def sessions() -> list[dict]:
     return load()["sessions"]
 

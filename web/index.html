@@ -378,6 +378,7 @@ function renderPlan(p){
             <div>
               <div class="text-sm font-medium leading-snug">${esc(s.title)}</div>
               <div class="text-[11px] text-slate-500 mt-0.5">${esc(s.venue)}${s.partner?` · ${esc(s.partner)}`:""}</div>
+              ${s.capacity && s.capacity<=400 ? `<div class="mt-1"><span class="text-[10px] text-amber-300 bg-amber-500/10 rounded px-1.5 py-0.5">🔥 ${s.capacity} seats · fills fast</span></div>` : ""}
               ${s.why&&s.why.length?`<div class="mt-1.5 flex flex-wrap gap-1">${s.why.map(w=>`<span class="text-[10px] text-emerald-300 bg-emerald-500/10 rounded px-1.5 py-0.5">${esc(w)}</span>`).join("")}</div>`:""}
               ${["logistics","deadline","build"].includes(s.type)?"":`<button class="discuss mt-2 text-[11px] text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-md px-2 py-1 btn" data-id="${s.id}">💬 Discuss</button>`}
             </div>
