@@ -71,11 +71,15 @@ def _run_tool(name: str, args: dict, profile: dict, ctx: dict):
     if name in ("replace_session", "remove_session"):
         sid = args.get("session_id", "")
         action = "replace" if name == "replace_session" else "remove"
-        plan, new_state = planner.edit_plan(eff, action, sid)
+        plan, new_state, info = planner.edit_plan(eff, action, sid)
         ctx["state"] = new_state
         ctx["plan"] = plan
-        n = sum(len(d["sessions"]) for d in plan["days"])
-        return {"status": f"{action}d {sid}", "plan_sessions": n}
+        by_id = {s["id"]: s for s in data.sessions()}
+        added = [by_id[i]["title"] for i in info["added"] if i in by_id]
+        return {"removed_id": sid, "slot_filled": info["filled"],
+                "now_filled_by": added,
+                "note": ("" if info["filled"]
+                         else "No other session occupies that time window, so the slot is now free.")}
     return {"error": f"unknown tool {name}"}
 
 
@@ -204,7 +208,11 @@ EDIT_SYSTEM = (
     "You are Compass, editing a builder's Agentic AI Build Week plan. The user is discussing "
     "ONE specific session. If they want it changed, call replace_session or remove_session with "
     "that session's id; this keeps every other session fixed. If they only want an explanation, "
-    "answer directly using the tools. Be concise and concrete."
+    "answer directly using the tools. Be concise and concrete. "
+    "IMPORTANT: report exactly what the edit tool returned. If slot_filled is true, name the "
+    "session in now_filled_by that now occupies that time. If slot_filled is false, tell the user "
+    "there was no other session in that time slot, so it is now free. Never claim a replacement "
+    "that did not happen, and never invent a session."
 )
 
 
@@ -235,10 +243,15 @@ def _fallback_edit(profile: dict, instruction: str, focus: dict, ctx: dict) -> d
     trace = [{"type": "think", "text": f"edit request on {sid}"}]
     if sid and any(w in q for w in ["replace", "swap", "change", "different", "instead", "another", "remove", "delete", "drop"]):
         action = "remove" if any(w in q for w in ["remove", "delete", "drop"]) else "replace"
-        plan, new_state = planner.edit_plan(profile, action, sid)
+        plan, new_state, info = planner.edit_plan(profile, action, sid)
+        by_id = {s["id"]: s for s in data.sessions()}
+        added = [by_id[i]["title"] for i in info["added"] if i in by_id]
         trace.append({"type": "tool", "tool": f"{action}_session", "input": {"session_id": sid},
-                      "summary": f"{action}d, {sum(len(d['sessions']) for d in plan['days'])} sessions"})
-        ans = f"Done. I {action}d that session and kept everything else fixed."
+                      "summary": ("filled by " + ", ".join(added)) if info["filled"] else "removed, slot now free"})
+        if info["filled"]:
+            ans = f"Done. That slot is now {', '.join(added)}, and the rest of your plan is unchanged."
+        else:
+            ans = "Done. There's no other session in that time slot, so I removed it and that time is now free. Everything else stays the same."
         trace.append({"type": "answer", "text": ans})
         return {"answer": ans, "trace": trace, "brain": "local", "state": new_state, "plan": plan}
     # explain

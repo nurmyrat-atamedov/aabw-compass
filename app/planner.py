@@ -183,21 +183,31 @@ def build_plan(profile: dict) -> dict:
     return {"profile": profile, "days": by_day}
 
 
-def edit_plan(profile: dict, action: str, session_id: str) -> tuple[dict, dict]:
+def edit_plan(profile: dict, action: str, session_id: str) -> tuple[dict, dict, dict]:
     """Change ONE slot without disturbing the rest.
 
     Strategy: pin every currently-planned session except the one being changed,
-    exclude the target, then re-solve. Only the freed slot can move. Returns
-    (new_plan, new_profile_state) so the edit persists for follow-up edits.
+    exclude the target, then re-solve. Because every other pick is pinned and
+    the schedule is conflict-free + travel-aware, ONLY the freed time window can
+    change, and any replacement must fit that window without overlapping the
+    rest. If the schedule has no other session in that window, the slot simply
+    opens (a remove, not a swap).
+
+    Returns (new_plan, new_profile_state, info) where info reports what actually
+    happened: {"removed", "added": [ids], "filled": bool}.
     """
     current = build_plan(profile)
-    current_ids = [s["id"] for d in current["days"] for s in d["sessions"]]
+    before_ids = {s["id"] for d in current["days"] for s in d["sessions"]}
     excluded = list(dict.fromkeys((profile.get("excluded") or []) + [session_id]))
     pinned = list(dict.fromkeys(
-        (profile.get("pinned") or []) + [i for i in current_ids if i != session_id]
+        (profile.get("pinned") or []) + [i for i in before_ids if i != session_id]
     ))
     new_profile = {**profile, "pinned": pinned, "excluded": excluded}
-    return build_plan(new_profile), new_profile
+    new_plan = build_plan(new_profile)
+    new_ids = {s["id"] for d in new_plan["days"] for s in d["sessions"]}
+    added = sorted(new_ids - (before_ids - {session_id}))
+    info = {"removed": session_id, "added": added, "filled": bool(added)}
+    return new_plan, new_profile, info
 
 
 def now_next(profile: dict, now_date: str, now_time: str) -> dict:
