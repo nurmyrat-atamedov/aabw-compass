@@ -197,6 +197,18 @@ function skeletonPlan(n){
   for(let k=0;k<(n||3);k++) cards += `<div class="glass-2 rounded-xl px-3.5 py-3"><div class="shim h-3.5 w-3/4 rounded mb-2"></div><div class="shim h-2.5 w-1/2 rounded"></div></div>`;
   return `<div class="space-y-3"><div class="shim h-3 w-24 rounded"></div><div class="space-y-2">${cards}</div></div>`;
 }
+function mdLite(raw){
+  let s = esc(raw||"");
+  s = s.replace(/\*\*(.+?)\*\*/g,'<b class="text-slate-100">$1</b>').replace(/(?<![*\w])\*(?!\s)(.+?)\*(?![*\w])/g,'<i>$1</i>');
+  const lines = s.split(/\r?\n/); let out="", inList=false;
+  for(const ln of lines){
+    const m = ln.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)/);
+    if(m){ if(!inList){ out+='<ul class="list-disc pl-4 my-1 space-y-1 marker:text-emerald-500">'; inList=true; } out+=`<li>${m[1]}</li>`; }
+    else { if(inList){ out+='</ul>'; inList=false; } if(ln.trim()) out+=`<p class="my-1">${ln}</p>`; }
+  }
+  if(inList) out+='</ul>';
+  return out;
+}
 
 async function init(){
   META = await (await fetch("/api/meta")).json();
@@ -362,7 +374,7 @@ async function ask(text){
   } finally { clearInterval(tid); }
   t.remove();
   const tr = r.trace ? `<div class="mt-1.5 text-[10px] mono text-slate-600 border-l border-white/10 pl-2 space-y-0.5">${traceHTML(r.trace.filter(s=>s.type!=="answer"))}</div>` : "";
-  chat.insertAdjacentHTML("beforeend",`<div class="fade"><span class="inline-block glass-2 rounded-2xl rounded-bl-sm px-3 py-1.5 text-[13px] leading-relaxed">${esc(r.answer).replace(/\n/g,"<br>")}</span> <span class="text-[9px] mono ${r.brain==="bedrock"?"text-emerald-500":"text-slate-600"}">${r.brain}</span>${tr}</div>`);
+  chat.insertAdjacentHTML("beforeend",`<div class="fade"><div class="glass-2 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-[13px] leading-relaxed">${mdLite(r.answer)}</div><div class="text-[9px] mono mt-1 ${r.brain==="bedrock"?"text-emerald-500":"text-slate-600"}">${r.brain==="bedrock"?"● answered by Bedrock agent":"○ local"}</div>${tr}</div>`);
   chat.scrollTop = chat.scrollHeight;
 }
 $("#send").onclick = () => { if($("#q").value.trim()){ ask($("#q").value.trim()); $("#q").value=""; } };
