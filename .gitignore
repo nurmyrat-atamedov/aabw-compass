@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.ics
+.DS_Store
+
+# never commit secrets
+ssh-key/
+*.pem
+*.key

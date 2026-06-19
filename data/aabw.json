@@ -1,0 +1,87 @@
+{
+  "event": {
+    "name": "Agentic AI Build Week",
+    "city": "Ho Chi Minh City",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "tz_offset": "+07:00",
+    "dates": "July 8-12, 2026"
+  },
+  "_schema_note": "This file is the integration contract. Everything the agent reasons over lives here. Organizers can replace/extend any array (sessions, venues, mentors) without touching code. Times are local ICT (UTC+7), 24h 'HH:MM'. 'capacity' is per the venue/RSVP; set null if unknown.",
+  "venues": [
+    { "id": "tasco", "name": "Tasco", "label": "Day 1 venue", "capacity": 150 },
+    { "id": "aws_office", "name": "AWS Office", "label": "Day 2 venue", "capacity": 400 },
+    { "id": "vng_campus", "name": "VNG Campus", "label": "Day 3 venue", "capacity": 200 },
+    { "id": "galaxy", "name": "Galaxy Innovation Park", "label": "Day 4-5 venue (Build + Demo)", "capacity": 2000 },
+    { "id": "tbd", "name": "Venue TBA", "label": "Networking nights - address shared on registration", "capacity": 100 }
+  ],
+  "travel_minutes": {
+    "tasco": { "aws_office": 25, "vng_campus": 35, "galaxy": 30, "tbd": 25 },
+    "aws_office": { "tasco": 25, "vng_campus": 30, "galaxy": 25, "tbd": 20 },
+    "vng_campus": { "tasco": 35, "aws_office": 30, "galaxy": 35, "tbd": 30 },
+    "galaxy": { "tasco": 30, "aws_office": 25, "vng_campus": 35, "tbd": 30 },
+    "tbd": { "tasco": 25, "aws_office": 20, "vng_campus": 30, "galaxy": 30 }
+  },
+  "sessions": [
+    { "id": "d1-reg", "title": "Registration & Welcome", "day": 1, "date": "2026-07-08", "start": "09:00", "end": "10:00", "venue": "tasco", "partner": null, "type": "logistics", "capacity": 150, "tags": ["onboarding"], "description": "Check in, get your badge, and kick off Build Week." },
+    { "id": "d1-byteplus", "title": "Render the Next Era of Creation with the BytePlus AI Stack", "day": 1, "date": "2026-07-08", "start": "10:00", "end": "12:00", "venue": "tasco", "partner": "BytePlus", "type": "workshop", "capacity": 150, "tags": ["learn_ai", "stack", "media", "byteplus"], "description": "BytePlus (ByteDance's enterprise AI arm) opens the hood on the tools their own teams use to build at scale." },
+    { "id": "d1-antitech", "title": "Antitech Session", "day": 1, "date": "2026-07-08", "start": "13:00", "end": "14:00", "venue": "tasco", "partner": "Antitech", "type": "workshop", "capacity": 150, "tags": ["learn_ai", "antitech"], "description": "Details to be announced." },
+    { "id": "d1-nvidia", "title": "Inside the NVIDIA Inception Program: How Startups Build & Scale AI Globally", "day": 1, "date": "2026-07-08", "start": "14:00", "end": "14:45", "venue": "tasco", "partner": "NVIDIA", "type": "workshop", "capacity": 150, "tags": ["credits", "startup", "investors", "scale", "nvidia"], "description": "NVIDIA Inception helps startups with compute, capital, and connections. Credits + GPU access + investor network." },
+    { "id": "d1-trae", "title": "TRAE in Your Professional Workflow", "day": 1, "date": "2026-07-08", "start": "15:00", "end": "16:00", "venue": "tasco", "partner": "TRAE", "type": "workshop", "capacity": 150, "tags": ["learn_ai", "tooling", "productivity", "trae"], "description": "A practical look at rewiring how you work with agentic coding tools." },
+    { "id": "d1-openclaw", "title": "Community - OpenClaw", "day": 1, "date": "2026-07-08", "start": "16:00", "end": "18:00", "venue": "tasco", "partner": "OpenClaw", "type": "community", "capacity": 150, "tags": ["networking", "community"], "description": "Community session. Details to be announced." },
+    { "id": "nn-image", "title": "Image & Video AI Networking Night", "day": 0, "date": "2026-07-07", "start": "18:00", "end": "20:00", "venue": "tbd", "partner": "GenAI Fund", "type": "networking", "capacity": 100, "tags": ["networking", "investors", "media"], "description": "Invite-only. ~100 practitioners building or backing image and video AI. Requires AABW registration." },
+
+    { "id": "d2-aws", "title": "AWS Workshop", "day": 2, "date": "2026-07-09", "start": "10:00", "end": "12:00", "venue": "aws_office", "partner": "AWS", "type": "workshop", "capacity": 400, "tags": ["credits", "aws", "cloud", "learn_ai", "scale"], "description": "Hands-on with the AWS AI stack. Meet AWS Solutions Architects (also track judges). Details TBA." },
+    { "id": "d2-agora", "title": "Agora Session", "day": 2, "date": "2026-07-09", "start": "13:00", "end": "14:00", "venue": "aws_office", "partner": "Agora", "type": "workshop", "capacity": 400, "tags": ["learn_ai", "realtime", "agora"], "description": "Details to be announced." },
+    { "id": "d2-tinyfish", "title": "TinyFish Session", "day": 2, "date": "2026-07-09", "start": "14:00", "end": "15:00", "venue": "aws_office", "partner": "TinyFish", "type": "workshop", "capacity": 400, "tags": ["learn_ai", "agents", "tinyfish"], "description": "Details to be announced." },
+    { "id": "nn-gaming", "title": "AI x Gaming Networking Night", "day": 2, "date": "2026-07-09", "start": "18:00", "end": "20:00", "venue": "tbd", "partner": "GenAI Fund", "type": "networking", "capacity": 100, "tags": ["networking", "investors", "gaming"], "description": "Invite-only. ~100 people at the intersection of AI and gaming. Requires AABW registration." },
+
+    { "id": "d3-apify", "title": "Build, Deploy and Monetize AI Agents: The Future of the Developer Economy", "day": 3, "date": "2026-07-10", "start": "10:00", "end": "12:00", "venue": "vng_campus", "partner": "Apify", "type": "workshop", "capacity": 200, "tags": ["agents", "monetize", "deploy", "credits", "apify"], "description": "Getting an agent deployed, used, and paying you. The second half of building agents." },
+    { "id": "d3-google", "title": "Beyond Autocomplete: How Agentic AI Solves the Enterprise Design Bottleneck", "day": 3, "date": "2026-07-10", "start": "14:00", "end": "15:00", "venue": "vng_campus", "partner": "Google Developers", "type": "workshop", "capacity": 200, "tags": ["agents", "design", "enterprise", "google"], "description": "The difference between plausible pixels and usable systems, with Google Developer Expert Linh Nguyen." },
+    { "id": "d3-tencent", "title": "Tencent Cloud Session", "day": 3, "date": "2026-07-10", "start": "15:00", "end": "16:00", "venue": "vng_campus", "partner": "Tencent Cloud", "type": "workshop", "capacity": 200, "tags": ["learn_ai", "cloud", "tencent"], "description": "Details to be announced." },
+    { "id": "d3-community", "title": "Evening Community Night", "day": 3, "date": "2026-07-10", "start": "18:00", "end": "20:00", "venue": "vng_campus", "partner": null, "type": "community", "capacity": 200, "tags": ["networking", "community"], "description": "Community night before Build Day." },
+    { "id": "nn-physical", "title": "Physical AI Networking Night", "day": 3, "date": "2026-07-10", "start": "18:00", "end": "20:00", "venue": "tbd", "partner": "GenAI Fund", "type": "networking", "capacity": 100, "tags": ["networking", "investors", "robotics"], "description": "Invite-only. ~100 people in robotics and embodied AI. Requires AABW registration." },
+
+    { "id": "d4-keynote", "title": "Build Day Keynotes", "day": 4, "date": "2026-07-11", "start": "09:00", "end": "10:30", "venue": "galaxy", "partner": "AABW", "type": "keynote", "capacity": 2000, "tags": ["keynote", "learn_ai"], "description": "Keynote speakers incl. Girish Patil (AWS, Applied AI) and Dr. Benedict The (Vietjet, CDO)." },
+    { "id": "d4-parade", "title": "Expert Parade + Networking", "day": 4, "date": "2026-07-11", "start": "10:30", "end": "12:00", "venue": "galaxy", "partner": "AABW", "type": "networking", "capacity": 2000, "tags": ["networking", "mentors", "investors"], "description": "Meet mentors and enterprise experts across all tracks before you build." },
+    { "id": "d4-build", "title": "Hackathon Build (heads-down + late-night)", "day": 4, "date": "2026-07-11", "start": "13:00", "end": "23:59", "venue": "galaxy", "partner": null, "type": "build", "capacity": 2000, "tags": ["build"], "description": "On-site building. This is the hackathon. Submission is due 9:00 AM next morning." },
+
+    { "id": "d5-submit", "title": "Submission Deadline (Devpost)", "day": 5, "date": "2026-07-12", "start": "09:00", "end": "09:00", "venue": "galaxy", "partner": null, "type": "deadline", "capacity": null, "tags": ["deadline"], "description": "Final submission due on Devpost. Late submissions are not accepted." },
+    { "id": "d5-demo", "title": "Demo Day", "day": 5, "date": "2026-07-12", "start": "10:00", "end": "16:00", "venue": "galaxy", "partner": "AABW", "type": "demo", "capacity": 2000, "tags": ["demo", "judging"], "description": "Teams present, judges score, enterprises evaluate for deployment." },
+    { "id": "d5-awards", "title": "Award Ceremony", "day": 5, "date": "2026-07-12", "start": "16:00", "end": "18:00", "venue": "galaxy", "partner": "AABW", "type": "ceremony", "capacity": 2000, "tags": ["awards"], "description": "Winners announced. Prizes + deployment conversations." }
+  ],
+  "tracks": [
+    { "id": "aws", "name": "Built with AWS", "sponsor": "Amazon Web Services", "kind": "open", "tags": ["aws", "cloud", "open"] },
+    { "id": "mobility", "name": "Mobility", "sponsor": "Tasco", "kind": "enterprise", "tags": ["mobility", "logistics"] },
+    { "id": "realestate", "name": "Real Estate", "sponsor": "Nova Group", "kind": "enterprise", "tags": ["realestate"] },
+    { "id": "fnb", "name": "F&B", "sponsor": "KFC", "kind": "enterprise", "tags": ["fnb", "retail", "customer"] },
+    { "id": "gaming", "name": "Gaming", "sponsor": "VNG Games", "kind": "consumer", "tags": ["gaming"] },
+    { "id": "retail", "name": "Retail", "sponsor": "Phong Vu", "kind": "enterprise", "tags": ["retail", "customer"] },
+    { "id": "aviation", "name": "Aviation", "sponsor": "Galaxy Holdings | Vietjet", "kind": "enterprise", "tags": ["aviation", "travel", "customer"] },
+    { "id": "healthcare", "name": "Healthcare Retail", "sponsor": "Guardian", "kind": "enterprise", "tags": ["healthcare", "retail", "wellness", "customer"] },
+    { "id": "robotics", "name": "Robotics & Physical AI", "sponsor": "TBA", "kind": "enterprise", "tags": ["robotics", "physical"] },
+    { "id": "builder_exp", "name": "Builder Experience", "sponsor": "GenAI Fund", "kind": "pre_event", "tags": ["builders", "tooling"] }
+  ],
+  "mentors": [
+    { "name": "Girish Patil", "role": "Tech Lead - Applied AI", "org": "AWS", "tracks": ["aws"], "tags": ["aws", "cloud", "agents"] },
+    { "name": "Nguyen Gia Hung", "role": "Head of Solutions Architect, VN & Cambodia", "org": "AWS", "tracks": ["aws"], "tags": ["aws", "architecture"] },
+    { "name": "Thi Nguyen", "role": "Senior Solutions Architect", "org": "AWS", "tracks": ["aws"], "tags": ["aws", "architecture"] },
+    { "name": "Lance Canavan", "role": "Managing Director", "org": "Guardian Vietnam", "tracks": ["healthcare"], "tags": ["healthcare", "retail", "business"] },
+    { "name": "Sibojyoti C.", "role": "General Director", "org": "KFC", "tracks": ["fnb"], "tags": ["fnb", "retail", "business"] },
+    { "name": "Kevin Duong", "role": "CTO", "org": "Gamota", "tracks": ["gaming"], "tags": ["gaming", "tech"] },
+    { "name": "Zenda Nguyen", "role": "Group CIO", "org": "Nova Group", "tracks": ["realestate"], "tags": ["realestate", "tech"] },
+    { "name": "Phong Nguyen", "role": "Deputy CEO, Technology Operations", "org": "Tasco", "tracks": ["mobility"], "tags": ["mobility", "tech"] },
+    { "name": "Jason Pham", "role": "NVIDIA Inception Community Manager, SEA", "org": "NVIDIA", "tracks": [], "tags": ["credits", "startup", "investors"] },
+    { "name": "Jakub Drobnik", "role": "Engineering Team Lead", "org": "Apify", "tracks": [], "tags": ["agents", "monetize", "deploy"] }
+  ],
+  "perks": [
+    { "name": "NVIDIA Inception", "value": "GPU + cloud credits, investor connections", "who": "startups", "claim": "Apply at the Day 1 NVIDIA session or nvidia.com/inception", "tags": ["credits", "startup"] },
+    { "name": "AWS Activate", "value": "Up to $100k AWS credits (provider-referred tier)", "who": "early startups", "claim": "Ask an AWS SA at the Day 2 AWS Office for a provider referral", "tags": ["credits", "aws"] },
+    { "name": "Partner credit drop", "value": "API credits from OpenAI, Qwen, Notion, BytePlus and others", "who": "all builders", "claim": "Claim from July 1 via Discord and aabw.genaifund.ai", "tags": ["credits"] }
+  ],
+  "key_dates": [
+    { "date": "2026-06-23", "label": "Builder onboarding webinar (tracks + judging criteria preview)" },
+    { "date": "2026-07-01", "label": "Problem statements released + perks/credits claimable" },
+    { "date": "2026-07-10", "label": "Confirm your track on Devpost by 9:00 PM ICT (60 slots/track)" },
+    { "date": "2026-07-12", "label": "Final submission due 9:00 AM ICT" }
+  ]
+}
