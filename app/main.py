@@ -16,6 +16,25 @@ class Profile(BaseModel):
     goals: list[str] = []
     track: str | None = None
     interests: list[str] = []
+    skills: list[str] = []
+    cv_summary: str | None = None
+    pinned: list[str] = []
+    excluded: list[str] = []
+
+
+class FocusSession(BaseModel):
+    id: str | None = None
+    title: str | None = None
+    start: str | None = None
+    venue: str | None = None
+
+
+class EditReq(BaseModel):
+    profile: Profile
+    instruction: str
+    focus: FocusSession | None = None
+    date: str | None = None
+    time: str | None = None
 
 
 class NowReq(BaseModel):
@@ -75,6 +94,13 @@ def now(r: NowReq):
 @app.post("/api/ask")
 def ask(r: AskReq):
     return agent.run_ask(r.question, r.profile.model_dump(), {"date": r.date, "time": r.time})
+
+
+@app.post("/api/agent/edit")
+def agent_edit(r: EditReq):
+    focus = r.focus.model_dump() if r.focus else {}
+    return agent.run_edit(r.profile.model_dump(), r.instruction, focus,
+                          {"date": r.date, "time": r.time})
 
 
 @app.post("/api/cv")

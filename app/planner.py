@@ -80,6 +80,11 @@ def score_session(session: dict, profile: dict) -> tuple[float, list[str]]:
         score += 5  # the hackathon itself
         reasons.append("the build")
 
+    # Conversational edits: a pinned session is force-kept; the agent pins
+    # everything except the slot you're changing, so only that slot moves.
+    if session.get("id") in set(profile.get("pinned") or []):
+        score += 1000
+
     # A small base so nothing is exactly zero (keeps ties stable).
     score += 0.1
     return score, list(dict.fromkeys(reasons))
@@ -139,8 +144,11 @@ def _solve_day(day_sessions: list[dict]) -> list[dict]:
 
 def build_plan(profile: dict) -> dict:
     """Return the personalized, conflict-free plan grouped by day."""
+    excluded = set(profile.get("excluded") or [])
     scored: dict[int, list[dict]] = {}
     for s in data.sessions():
+        if s["id"] in excluded:
+            continue  # conversational edit: user dropped this one
         sc, reasons = score_session(s, profile)
         item = dict(s)
         item["_score"] = sc
@@ -173,6 +181,23 @@ def build_plan(profile: dict) -> dict:
         if clean:
             by_day.append({"day": day, "date": clean[0]["date"], "sessions": clean})
     return {"profile": profile, "days": by_day}
+
+
+def edit_plan(profile: dict, action: str, session_id: str) -> tuple[dict, dict]:
+    """Change ONE slot without disturbing the rest.
+
+    Strategy: pin every currently-planned session except the one being changed,
+    exclude the target, then re-solve. Only the freed slot can move. Returns
+    (new_plan, new_profile_state) so the edit persists for follow-up edits.
+    """
+    current = build_plan(profile)
+    current_ids = [s["id"] for d in current["days"] for s in d["sessions"]]
+    excluded = list(dict.fromkeys((profile.get("excluded") or []) + [session_id]))
+    pinned = list(dict.fromkeys(
+        (profile.get("pinned") or []) + [i for i in current_ids if i != session_id]
+    ))
+    new_profile = {**profile, "pinned": pinned, "excluded": excluded}
+    return build_plan(new_profile), new_profile
 
 
 def now_next(profile: dict, now_date: str, now_time: str) -> dict:

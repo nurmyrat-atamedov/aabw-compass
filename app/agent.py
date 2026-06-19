@@ -56,16 +56,26 @@ def tool_find_perks(stack: str) -> list[dict]:
 
 
 def _run_tool(name: str, args: dict, profile: dict, ctx: dict):
+    # In edit sessions ctx["state"] is the live, mutating profile.
+    eff = ctx.get("state", profile)
     if name == "build_plan":
-        return tool_build_plan(profile)
+        return tool_build_plan(eff)
     if name == "now_next":
-        return tool_now_next(profile, args.get("date", ctx.get("date")), args.get("time", ctx.get("time")))
+        return tool_now_next(eff, args.get("date", ctx.get("date")), args.get("time", ctx.get("time")))
     if name == "search_sessions":
         return tool_search_sessions(args.get("query", ""))
     if name == "find_mentors":
         return tool_find_mentors(args.get("topic", ""))
     if name == "find_perks":
         return tool_find_perks(args.get("stack", ""))
+    if name in ("replace_session", "remove_session"):
+        sid = args.get("session_id", "")
+        action = "replace" if name == "replace_session" else "remove"
+        plan, new_state = planner.edit_plan(eff, action, sid)
+        ctx["state"] = new_state
+        ctx["plan"] = plan
+        n = sum(len(d["sessions"]) for d in plan["days"])
+        return {"status": f"{action}d {sid}", "plan_sessions": n}
     return {"error": f"unknown tool {name}"}
 
 
@@ -94,6 +104,13 @@ TOOLSPEC = [
                   "inputSchema": {"json": {"type": "object", "properties": {}}}}},
 ]
 
+EDIT_TOOLSPEC = TOOLSPEC + [
+    {"toolSpec": {"name": "replace_session", "description": "Replace ONE session (by id) with a better alternative for the builder's goals. Every other session stays exactly as is.",
+                  "inputSchema": {"json": {"type": "object", "properties": {"session_id": {"type": "string"}}, "required": ["session_id"]}}}},
+    {"toolSpec": {"name": "remove_session", "description": "Remove ONE session (by id) from the plan. Every other session stays exactly as is.",
+                  "inputSchema": {"json": {"type": "object", "properties": {"session_id": {"type": "string"}}, "required": ["session_id"]}}}},
+]
+
 ASK_SYSTEM = (
     "You are Compass, the on-site copilot for Agentic AI Build Week, Ho Chi Minh City. "
     "Use the tools to ground every answer in the real schedule. Be concrete and short: "
@@ -101,12 +118,13 @@ ASK_SYSTEM = (
 )
 
 
-def _bedrock_loop(seed_text: str, system: str, profile: dict, ctx: dict, max_turns: int = 5):
+def _bedrock_loop(seed_text: str, system: str, profile: dict, ctx: dict, max_turns: int = 5, tools=None):
     """Run the Converse tool-use loop. Returns dict or None if Bedrock is unusable."""
     try:
         import boto3
     except Exception:
         return None
+    tools = tools or TOOLSPEC
     model_id = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-haiku-20241022-v1:0")
     region = os.environ.get("AWS_REGION", "us-east-1")
     try:
@@ -116,7 +134,7 @@ def _bedrock_loop(seed_text: str, system: str, profile: dict, ctx: dict, max_tur
         for _ in range(max_turns):
             resp = client.converse(
                 modelId=model_id, system=[{"text": system}], messages=messages,
-                toolConfig={"tools": TOOLSPEC},
+                toolConfig={"tools": tools},
                 inferenceConfig={"maxTokens": 700, "temperature": 0.2},
             )
             out = resp["output"]["message"]
@@ -160,12 +178,19 @@ def run_plan(profile: dict, ctx: dict) -> dict:
     """Agent-driven planning: the model investigates, then calls build_plan."""
     goals = ", ".join(profile.get("goals") or []) or "general"
     track = profile.get("track") or "no specific track"
+    cv = ""
+    if profile.get("cv_summary"):
+        skills = ", ".join(profile.get("skills") or [])
+        cv = (f"Their background, from their CV: {profile['cv_summary']}. "
+              f"Skills: {skills}. Weigh sessions, mentors and perks toward this background, "
+              "and justify picks against both their goals and their experience. ")
     seed = (
         f"Plan {profile.get('name') or 'this builder'}'s week at Agentic AI Build Week. "
-        f"Their goals: {goals}. Track: {track}. "
-        "First investigate what matters for those goals using search_sessions, and find_perks "
-        "and/or find_mentors if relevant. Then call build_plan to produce the schedule. "
-        "Finally write a 2-sentence strategy summary of how this week serves their goals."
+        f"Their goals: {goals}. Track: {track}. {cv}"
+        "First investigate what matters using search_sessions, and find_perks and/or "
+        "find_mentors if relevant. Then call build_plan to produce the schedule. "
+        "Finally write a 2-sentence strategy summary of how this week serves their goals"
+        + (" and their background." if cv else ".")
     )
     res = _bedrock_loop(seed, ASK_SYSTEM, profile, ctx, max_turns=8)
     if res and not res.get("_error"):
@@ -173,6 +198,53 @@ def run_plan(profile: dict, ctx: dict) -> dict:
         return {"summary": res.get("final") or "Plan ready.", "plan": plan,
                 "trace": res["trace"], "brain": "bedrock"}
     return _fallback_plan(profile, ctx)
+
+
+EDIT_SYSTEM = (
+    "You are Compass, editing a builder's Agentic AI Build Week plan. The user is discussing "
+    "ONE specific session. If they want it changed, call replace_session or remove_session with "
+    "that session's id; this keeps every other session fixed. If they only want an explanation, "
+    "answer directly using the tools. Be concise and concrete."
+)
+
+
+def run_edit(profile: dict, instruction: str, focus: dict, ctx: dict) -> dict:
+    """Conversational edit scoped to one session. focus = {id,title,start,venue}."""
+    ctx = {**ctx, "state": dict(profile), "plan": None}
+    fdesc = f"id={focus.get('id')}, \"{focus.get('title')}\" at {focus.get('start')} ({focus.get('venue')})" if focus else "(none)"
+    seed = (
+        f"The builder is discussing this session: {fdesc}.\n"
+        f"Their request: \"{instruction}\"\n"
+        "If they want it swapped or removed, call the matching tool with its id. "
+        "Then reply in one or two sentences explaining what you changed (or answer their question)."
+    )
+    res = _bedrock_loop(seed, EDIT_SYSTEM, profile, ctx, max_turns=6, tools=EDIT_TOOLSPEC)
+    if res and not res.get("_error") and res.get("final"):
+        plan = ctx.get("plan")
+        out = {"answer": res["final"], "trace": res["trace"], "brain": "bedrock",
+               "state": ctx["state"]}
+        if plan is not None:
+            out["plan"] = plan
+        return out
+    return _fallback_edit(profile, instruction, focus, ctx)
+
+
+def _fallback_edit(profile: dict, instruction: str, focus: dict, ctx: dict) -> dict:
+    q = (instruction or "").lower()
+    sid = (focus or {}).get("id")
+    trace = [{"type": "think", "text": f"edit request on {sid}"}]
+    if sid and any(w in q for w in ["replace", "swap", "change", "different", "instead", "another", "remove", "delete", "drop"]):
+        action = "remove" if any(w in q for w in ["remove", "delete", "drop"]) else "replace"
+        plan, new_state = planner.edit_plan(profile, action, sid)
+        trace.append({"type": "tool", "tool": f"{action}_session", "input": {"session_id": sid},
+                      "summary": f"{action}d, {sum(len(d['sessions']) for d in plan['days'])} sessions"})
+        ans = f"Done. I {action}d that session and kept everything else fixed."
+        trace.append({"type": "answer", "text": ans})
+        return {"answer": ans, "trace": trace, "brain": "local", "state": new_state, "plan": plan}
+    # explain
+    ans = f"That session is \"{(focus or {}).get('title','')}\" at {(focus or {}).get('start','')}. Ask me to replace or remove it, or what to do around it."
+    trace.append({"type": "answer", "text": ans})
+    return {"answer": ans, "trace": trace, "brain": "local", "state": profile}
 
 
 # ---- Deterministic fallback (same tools, transparent 'local' label) ---------

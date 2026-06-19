@@ -160,7 +160,33 @@
   <footer class="text-center text-[10px] text-slate-600 mt-10 pb-4">Agentic AI Build Week · Builder Experience Track · powered by Amazon Bedrock</footer>
 </main>
 
-<div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 glass rounded-full px-4 py-2 text-sm text-emerald-300 opacity-0 transition-opacity duration-300 z-50 pointer-events-none">x</div>
+<!-- DISCUSS MODAL -->
+<div id="discuss" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
+  <div class="glass rounded-t-2xl sm:rounded-2xl w-full max-w-md max-h-[88vh] flex flex-col">
+    <div class="p-4 border-b border-white/10 flex items-start justify-between gap-2">
+      <div>
+        <div class="text-[10px] uppercase tracking-widest text-cyan-400">💬 Discuss session</div>
+        <div id="dTitle" class="text-sm font-semibold mt-0.5"></div>
+        <div id="dMeta" class="text-[11px] text-slate-500"></div>
+      </div>
+      <button id="dClose" class="text-slate-400 btn text-xl leading-none px-1">✕</button>
+    </div>
+    <div id="dChat" class="flex-1 overflow-y-auto p-4 space-y-2.5 min-h-[120px] text-[13px]"></div>
+    <div class="p-3 border-t border-white/10">
+      <div class="flex flex-wrap gap-1.5 mb-2 text-[11px]">
+        <button class="dq btn px-2 py-1 rounded-lg glass-2 text-slate-300" data-i="Replace it with a better fit for my goals">🔄 Replace it</button>
+        <button class="dq btn px-2 py-1 rounded-lg glass-2 text-slate-300" data-i="Why is this session in my plan?">❓ Why this</button>
+        <button class="dq btn px-2 py-1 rounded-lg glass-2 text-slate-300" data-i="Remove it from my plan">🗑 Remove</button>
+      </div>
+      <div class="flex gap-2">
+        <input id="dInput" placeholder="e.g. swap this for a hands-on session" class="flex-1 glass-2 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-cyan-500/50" />
+        <button id="dSend" class="btn gradbg rounded-xl px-4 text-sm font-bold text-emerald-950">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 glass rounded-full px-4 py-2 text-sm text-emerald-300 opacity-0 transition-opacity duration-300 z-[60] pointer-events-none">x</div>
 
 <script>
 const $ = s => document.querySelector(s);
@@ -243,7 +269,7 @@ function renderPerks(){
     </div>`).join("");
 }
 
-let cvInterests = [];
+let cvInterests = [], cvSummary = null, cvSkills = [];
 $("#cv").onchange = async (e) => {
   const f = e.target.files[0]; if(!f) return;
   $("#cvlabel").textContent = "⏳ reading "+f.name+"…";
@@ -252,18 +278,20 @@ $("#cv").onchange = async (e) => {
     const r = await (await fetch("/api/cv",{method:"POST",body:fd})).json();
     (r.suggested_goals||[]).forEach(g => { const c=$('#goals [data-g="'+g+'"]'); if(c) c.classList.add("on"); });
     if(r.suggested_track) $("#track").value = r.suggested_track;
-    cvInterests = r.interests||[];
+    cvInterests = r.interests||[]; cvSummary = r.summary||null; cvSkills = r.skills||[];
     $("#cvlabel").textContent = "✓ "+f.name+" — profile extracted";
     const note=$("#cvnote"); note.classList.remove("hidden");
-    note.innerHTML = (r.summary?`<b>From your CV:</b> ${esc(r.summary)}`:"")
-      + (cvInterests.length?`<br><span class="text-slate-400">Interests:</span> ${cvInterests.join(", ")}`:"")
-      + `<br><span class="text-slate-500 text-[10px]">extracted by ${r.brain==="bedrock"?"Bedrock":"keyword scan"} · adjust goals below if needed</span>`;
+    note.innerHTML = (cvSummary?`<b>From your CV:</b> ${esc(cvSummary)}`:"")
+      + (cvSkills.length?`<br><span class="text-slate-400">Skills:</span> ${cvSkills.map(esc).join(", ")}`:"")
+      + (cvInterests.length?`<br><span class="text-slate-400">Focus:</span> ${cvInterests.join(", ")}`:"")
+      + `<br><span class="text-slate-500 text-[10px]">extracted by ${r.brain==="bedrock"?"the Bedrock agent":"keyword scan"} · the agent plans around this. Adjust goals below if needed.</span>`;
   }catch(err){ $("#cvlabel").textContent = "⚠ couldn't read that file — pick goals manually"; }
 };
 
 $("#go").onclick = () => {
   const goals = [...$("#goals").querySelectorAll(".chip.on")].map(c => c.dataset.g);
-  profile = { name: $("#name").value || null, goals, track: $("#track").value || null, interests: cvInterests };
+  profile = { name: $("#name").value || null, goals, track: $("#track").value || null,
+              interests: cvInterests, skills: cvSkills, cv_summary: cvSummary, pinned: [], excluded: [] };
   localStorage.setItem("compass", JSON.stringify(profile)); enterApp();
 };
 $("#editBtn").onclick = () => { $("#app").classList.add("hidden"); $("#onboard").classList.remove("hidden"); $("#hdrCtrls").classList.add("hidden"); $("#hdrCtrls").classList.remove("flex"); };
@@ -311,12 +339,17 @@ function renderPlan(p){
               <div class="text-sm font-medium leading-snug">${esc(s.title)}</div>
               <div class="text-[11px] text-slate-500 mt-0.5">${esc(s.venue)}${s.partner?` · ${esc(s.partner)}`:""}</div>
               ${s.why&&s.why.length?`<div class="mt-1.5 flex flex-wrap gap-1">${s.why.map(w=>`<span class="text-[10px] text-emerald-300 bg-emerald-500/10 rounded px-1.5 py-0.5">${esc(w)}</span>`).join("")}</div>`:""}
+              ${["logistics","deadline","build"].includes(s.type)?"":`<button class="discuss mt-2 text-[11px] text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-md px-2 py-1 btn" data-id="${s.id}">💬 Discuss</button>`}
             </div>
             <div class="text-right shrink-0"><div class="text-[11px] mono text-slate-300">${s.start}</div><div class="text-[9px] text-slate-600">${s.end}</div></div>
           </summary>
           ${s.description?`<div class="px-3.5 pb-3 -mt-1 text-[12px] text-slate-400 leading-relaxed border-t border-white/5 pt-2">${esc(s.description)}</div>`:""}
         </details>`).join("")}</div>
     </div>`).join("");
+  bindDiscuss();
+}
+function bindDiscuss(){
+  document.querySelectorAll(".discuss").forEach(b => b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); openDiscuss(b.dataset.id); });
 }
 
 async function refresh(){
@@ -380,6 +413,43 @@ async function ask(text){
 $("#send").onclick = () => { if($("#q").value.trim()){ ask($("#q").value.trim()); $("#q").value=""; } };
 $("#q").addEventListener("keydown", e => { if(e.key==="Enter") $("#send").click(); });
 document.querySelectorAll(".ex").forEach(b => b.onclick = () => ask(b.textContent));
+
+// ---- per-session Discuss (conversational plan editing) ----
+let discussFocus = null;
+function openDiscuss(id){
+  const s = lastPlan && lastPlan.days.flatMap(d=>d.sessions).find(x=>x.id===id);
+  if(!s) return;
+  discussFocus = {id:s.id, title:s.title, start:s.start, venue:s.venue};
+  $("#dTitle").textContent = s.title;
+  $("#dMeta").textContent = `${s.start}–${s.end} · ${s.venue}${s.partner?" · "+s.partner:""}`;
+  $("#dChat").innerHTML = `<div class="text-[12px] text-slate-500">Ask me to replace or remove this, or why it's here. I'll change only this slot and leave the rest of your plan untouched.</div>`;
+  const m=$("#discuss"); m.classList.remove("hidden"); m.classList.add("flex"); setTimeout(()=>$("#dInput").focus(),50);
+}
+function closeDiscuss(){ const m=$("#discuss"); m.classList.add("hidden"); m.classList.remove("flex"); }
+$("#dClose").onclick = closeDiscuss;
+$("#discuss").addEventListener("click", e => { if(e.target.id==="discuss") closeDiscuss(); });
+
+async function discussSend(text){
+  if(!text || !discussFocus) return;
+  const chat = $("#dChat");
+  chat.insertAdjacentHTML("beforeend", `<div class="text-right fade"><span class="inline-block gradbg rounded-2xl rounded-br-sm px-3 py-1.5 text-emerald-950 font-medium">${esc(text)}</span></div>`);
+  const t=document.createElement("div"); chat.appendChild(t); chat.scrollTop=chat.scrollHeight;
+  const tid = startThinking(t, ["thinking","checking your plan","adjusting just this slot"]);
+  let r;
+  try{
+    r = await (await fetch("/api/agent/edit",{method:"POST",headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({profile, instruction:text, focus:discussFocus, date:$("#simDate").value, time:$("#simTime").value})})).json();
+  } finally { clearInterval(tid); }
+  t.remove();
+  const tr = r.trace ? `<div class="mt-1.5 text-[10px] mono text-slate-600 border-l border-white/10 pl-2 space-y-0.5">${traceHTML(r.trace.filter(s=>s.type!=="answer"))}</div>` : "";
+  chat.insertAdjacentHTML("beforeend", `<div class="fade"><div class="glass-2 rounded-2xl rounded-bl-sm px-3 py-2">${mdLite(r.answer)}</div>${tr}</div>`);
+  chat.scrollTop = chat.scrollHeight;
+  if(r.state){ profile = {...profile, pinned:r.state.pinned||[], excluded:r.state.excluded||[]}; localStorage.setItem("compass", JSON.stringify(profile)); }
+  if(r.plan){ lastPlan = r.plan; renderPlan(r.plan); refresh(); flash("✅ Plan updated"); }
+}
+$("#dSend").onclick = () => { if($("#dInput").value.trim()){ discussSend($("#dInput").value.trim()); $("#dInput").value=""; } };
+$("#dInput").addEventListener("keydown", e => { if(e.key==="Enter") $("#dSend").click(); });
+document.querySelectorAll(".dq").forEach(b => b.onclick = () => discussSend(b.dataset.i));
 
 init();
 </script>
